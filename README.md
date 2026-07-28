@@ -15,6 +15,7 @@ La aplicación implementa:
 
 ## Objetivo
 
+
 Construir una base sólida para una app de fisioterapia donde los desarrolladores principiantes puedan entender:
 1. Cómo se estructura un proyecto Spring Boot.
 2. Cómo funcionan los distintos paquetes y capas.
