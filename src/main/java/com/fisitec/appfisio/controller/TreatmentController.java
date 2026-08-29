@@ -24,7 +24,6 @@ public class TreatmentController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TreatmentResponseDTO> createTreatment(@Valid @RequestBody TreatmentRequestDTO request) {
         TreatmentResponseDTO response = treatmentService.createTreatment(request);
-        // Devolvemos HTTP 201 Created
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -40,5 +39,22 @@ public class TreatmentController {
     @PreAuthorize("hasAnyRole('ADMIN', 'PACIENTE', 'FISIOTERAPEUTA')")
     public ResponseEntity<TreatmentResponseDTO> getTreatmentById(@PathVariable String id) {
         return ResponseEntity.ok(treatmentService.getTreatmentById(id));
+    }
+
+    // Actualizar un tratamiento (Solo ADMIN)
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TreatmentResponseDTO> updateTreatment(
+            @PathVariable String id,
+            @Valid @RequestBody TreatmentRequestDTO request) {
+        return ResponseEntity.ok(treatmentService.updateTreatment(id, request));
+    }
+
+    // Eliminar un tratamiento (Solo ADMIN)
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteTreatment(@PathVariable String id) {
+        treatmentService.deleteTreatment(id);
+        return ResponseEntity.noContent().build();
     }
 }

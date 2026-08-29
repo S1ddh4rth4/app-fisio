@@ -31,6 +31,7 @@ public class JwtService {
 
     /**
      * Get the signing key for JWT.
+     * 
      * @return the Key for signing
      */
     private Key getSignInKey() {
@@ -40,27 +41,30 @@ public class JwtService {
 
     /**
      * Extract username from JWT token.
+     * 
      * @param token the JWT token
      * @return the username
      */
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractClaim(token, claims -> claims.getSubject());
     }
 
     /**
      * Extract expiration date from JWT token.
+     * 
      * @param token the JWT token
      * @return the expiration date
      */
     public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractClaim(token, claims -> claims.getExpiration());
     }
 
     /**
      * Extract a specific claim from JWT token.
-     * @param token the JWT token
+     * 
+     * @param token          the JWT token
      * @param claimsResolver function to extract the claim
-     * @param <T> the type of the claim
+     * @param <T>            the type of the claim
      * @return the claim value
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -70,6 +74,7 @@ public class JwtService {
 
     /**
      * Extract all claims from JWT token.
+     * 
      * @param token the JWT token
      * @return the claims
      */
@@ -83,6 +88,7 @@ public class JwtService {
 
     /**
      * Check if JWT token is expired.
+     * 
      * @param token the JWT token
      * @return true if expired, false otherwise
      */
@@ -92,6 +98,7 @@ public class JwtService {
 
     /**
      * Generate JWT token for user.
+     * 
      * @param userDetails the user details
      * @return the JWT token
      */
@@ -101,6 +108,7 @@ public class JwtService {
 
     /**
      * Create JWT token with username as subject.
+     * 
      * @param subject the username
      * @return the JWT token
      */
@@ -115,7 +123,8 @@ public class JwtService {
 
     /**
      * Validate JWT token against user details.
-     * @param token the JWT token
+     * 
+     * @param token       the JWT token
      * @param userDetails the user details
      * @return true if valid, false otherwise
      */
