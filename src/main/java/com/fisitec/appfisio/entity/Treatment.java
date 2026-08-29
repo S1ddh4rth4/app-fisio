@@ -31,9 +31,12 @@ public class Treatment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
     @Column(nullable = false, unique = true)
     private String name;
-    @Column(nullable = false, length = 500)
+
+    // Ampliamos a 2000 caracteres para permitir descripciones clínicas completas
+    @Column(nullable = false, length = 1000)
     private String description;
 
     @Column(nullable = false)
@@ -45,7 +48,7 @@ public class Treatment {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 }

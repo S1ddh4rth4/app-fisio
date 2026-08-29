@@ -28,7 +28,6 @@ public class TreatmentService {
             throw new IllegalArgumentException("Ya existe un tratamiento con el nombre: " + request.getName());
         }
 
-        // Convertir el DTO (Mensajero) a la Entidad (Base de Datos)
         Treatment treatment = Treatment.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -36,16 +35,13 @@ public class TreatmentService {
                 .price(request.getPrice())
                 .build();
 
-        // Guardar
         Treatment savedTreatment = treatmentRepository.save(treatment);
-
-        // Devolver la respuesta formateada
         return mapToDTO(savedTreatment);
     }
 
     public List<TreatmentResponseDTO> getAllTreatments() {
         return treatmentRepository.findAll().stream()
-                .map(this::mapToDTO) // Convertimos cada Entidad a DTO
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -53,6 +49,40 @@ public class TreatmentService {
         Treatment treatment = treatmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tratamiento no encontrado con ID: " + id));
         return mapToDTO(treatment);
+    }
+
+    /**
+     * Actualizar los datos de un tratamiento existente.
+     */
+    @Transactional
+    public TreatmentResponseDTO updateTreatment(String id, TreatmentRequestDTO request) {
+        Treatment treatment = treatmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tratamiento no encontrado con ID: " + id));
+
+        // Si cambió el nombre, validar que no choque con otro existente
+        if (!treatment.getName().equalsIgnoreCase(request.getName())
+                && treatmentRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Ya existe otro tratamiento con el nombre: " + request.getName());
+        }
+
+        treatment.setName(request.getName());
+        treatment.setDescription(request.getDescription());
+        treatment.setDurationMinutes(request.getDurationMinutes());
+        treatment.setPrice(request.getPrice());
+
+        Treatment updated = treatmentRepository.save(treatment);
+        return mapToDTO(updated);
+    }
+
+    /**
+     * Eliminar un tratamiento del catálogo por su ID.
+     */
+    @Transactional
+    public void deleteTreatment(String id) {
+        if (!treatmentRepository.existsById(id)) {
+            throw new IllegalArgumentException("Tratamiento no encontrado con ID: " + id);
+        }
+        treatmentRepository.deleteById(id);
     }
 
     // Método de utilidad privado para no repetir código al mapear

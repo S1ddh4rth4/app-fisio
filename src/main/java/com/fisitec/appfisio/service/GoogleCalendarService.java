@@ -40,27 +40,36 @@ public class GoogleCalendarService {
      * justo después de que Spring Boot crea esta clase.
      */
     @PostConstruct
-    public void init() throws Exception {
-        // 1. Leer el archivo JSON de resources
-        String fileName = credentialsPath.replace("classpath:", "/");
-        InputStream in = getClass().getResourceAsStream(fileName);
+    public void init() {
+        try {
+            if (credentialsPath == null || credentialsPath.isBlank()) {
+                System.out.println("⚠️ Google Calendar credentialsPath no configurado. Servicio en modo inactivo.");
+                return;
+            }
 
-        if (in == null) {
-            throw new RuntimeException("No se encontró el archivo de credenciales de Google: " + fileName);
+            String fileName = credentialsPath.replace("classpath:", "/");
+            InputStream in = getClass().getResourceAsStream(fileName);
+
+            if (in == null) {
+                System.out.println("⚠️ No se encontró el archivo de credenciales de Google: " + fileName
+                        + ". Google Calendar funcionará en modo simulado.");
+                return;
+            }
+
+            GoogleCredentials credentials = GoogleCredentials.fromStream(in)
+                    .createScoped(Collections.singleton(CalendarScopes.CALENDAR));
+
+            client = new Calendar.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    GsonFactory.getDefaultInstance(),
+                    new HttpCredentialsAdapter(credentials))
+                    .setApplicationName("App Fisio")
+                    .build();
+
+            System.out.println("✅ Google Calendar Service inicializado correctamente.");
+        } catch (Exception e) {
+            System.err.println("⚠️ Error al inicializar Google Calendar: " + e.getMessage());
         }
-
-        // 2. Crear credenciales MODERNAS con permisos de Calendario (Nota la "s" al
-        // final)
-        GoogleCredentials credentials = GoogleCredentials.fromStream(in)
-                .createScoped(Collections.singleton(CalendarScopes.CALENDAR));
-
-        // 3. Construir el cliente usando el nuevo Adaptador HTTP
-        client = new Calendar.Builder(
-                GoogleNetHttpTransport.newTrustedTransport(),
-                GsonFactory.getDefaultInstance(),
-                new HttpCredentialsAdapter(credentials)) // <--- Aquí usamos el adaptador
-                .setApplicationName("App Fisio")
-                .build();
     }
 
     /**

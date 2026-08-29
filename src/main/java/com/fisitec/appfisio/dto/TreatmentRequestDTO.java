@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ public class TreatmentRequestDTO {
     private String name;
 
     @NotBlank(message = "La descripción es obligatoria")
+    @Size(max = 1000, message = "La descripción no puede superar los 1000 caracteres")
     private String description;
 
     @NotNull(message = "La duración es obligatoria")

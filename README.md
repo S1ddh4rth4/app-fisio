@@ -15,6 +15,7 @@ La aplicación implementa:
 
 ## Objetivo
 
+
 Construir una base sólida para una app de fisioterapia donde los desarrolladores principiantes puedan entender:
 1. Cómo se estructura un proyecto Spring Boot.
 2. Cómo funcionan los distintos paquetes y capas.
@@ -234,7 +235,11 @@ Maneja errores comunes de validación, credenciales inválidas y excepciones no 
 | POST | `/api/v1/appointments` | Agenda una nueva cita. | Todos los roles |
 | GET | `/api/v1/calendar/slots` | Consulta horas libres (Simulado por ahora). | `ADMIN`, `PACIENTE`, `FISIO` |
 | POST | `/api/v1/calendar/book` | Agenda una cita real en Google Calendar. | `ADMIN`, `PACIENTE` |
-
+| POST | `/api/v1/treatments` | Registra un nuevo tratamiento en el catálogo. | `ADMIN` |
+| GET | `/api/v1/treatments` | Obtiene el catálogo de tratamientos. | `ADMIN`, `PACIENTE`, `FISIOTERAPEUTA` |
+| GET | `/api/v1/treatments/{id}` | Obtiene un tratamiento por ID. | `ADMIN`, `PACIENTE`, `FISIOTERAPEUTA` |
+| POST | `/api/v1/medical-records` | Registra una ficha de historial clínico. | `ADMIN`, `FISIOTERAPEUTA` |
+| GET | `/api/v1/medical-records/patient/{patientId}` | Obtiene el historial clínico de un paciente. | `ADMIN`, `FISIOTERAPEUTA`, `PACIENTE` |
 
 ## Cómo ejecutar
 
