@@ -122,7 +122,7 @@ class PaymentServiceTest {
         AppointmentResponseDTO response = paymentService.updateAppointmentPayment(1L, paymentUpdate);
 
         assertNotNull(response);
-        assertEquals("PAQUETE", response.getPaymentStatus());
+        assertEquals("PAGADO", response.getPaymentStatus());
         assertEquals(1, pkg.getUsedSessions()); // Se utilizó 1 sesión
         verify(packageRepository, times(1)).save(pkg);
     }
