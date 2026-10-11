@@ -50,22 +50,22 @@ export const RegisterStaffModal = ({ isOpen, onClose, onSuccess }: RegisterStaff
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div>
-                        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Alta de Personal Clínico</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Crea cuentas de acceso para fisioterapeutas, recepción o administradores</p>
+                        <h2 className="text-xl font-extrabold text-slate-900">Alta de Personal Clínico</h2>
+                        <p className="text-xs text-slate-500 mt-0.5">Crea cuentas de acceso para fisioterapeutas, recepción o administradores</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition cursor-pointer"
+                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {errorMsg && (
-                    <div className="my-4 p-3.5 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-start gap-2.5 text-sm text-rose-800 dark:text-rose-300">
+                    <div className="my-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-sm text-rose-800">
                         <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                         <span>{errorMsg}</span>
                     </div>
@@ -102,7 +102,7 @@ export const RegisterStaffModal = ({ isOpen, onClose, onSuccess }: RegisterStaff
                     />
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                        <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                             Rol y Privilegios en la Clínica
                         </label>
                         <div className="relative">
@@ -112,7 +112,7 @@ export const RegisterStaffModal = ({ isOpen, onClose, onSuccess }: RegisterStaff
                             <select
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
-                                className="w-full h-11 pl-11 pr-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                className="w-full h-11 pl-11 pr-4 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
                             >
                                 <option value="ROLE_FISIOTERAPEUTA">Fisioterapeuta (Citas, Pacientes, Historias y Prescripciones)</option>
                                 <option value="ROLE_RECEPCION">Recepción (Agenda de Citas y Pagos)</option>
@@ -121,14 +121,14 @@ export const RegisterStaffModal = ({ isOpen, onClose, onSuccess }: RegisterStaff
                         </div>
                     </div>
 
-                    <div className="p-3 bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-xl flex items-start gap-2.5 text-xs text-teal-800 dark:text-teal-300">
+                    <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl flex items-start gap-2.5 text-xs text-teal-800">
                         <Info className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                         <span>
                             <strong>Seguridad activada:</strong> Al iniciar sesión con esta contraseña provisional, el sistema le pedirá de inmediato crear su contraseña definitiva.
                         </span>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                         <Button type="button" variant="outline" size="md" onClick={onClose}>
                             Cancelar
                         </Button>

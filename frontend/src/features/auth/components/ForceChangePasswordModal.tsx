@@ -59,19 +59,19 @@ export const ForceChangePasswordModal = () => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
                 <div className="text-center mb-6">
-                    <div className="mx-auto w-14 h-14 bg-amber-50 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 dark:border-amber-800">
-                        <ShieldAlert className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+                    <div className="mx-auto w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mb-3 border border-amber-200">
+                        <ShieldAlert className="w-7 h-7 text-amber-600" />
                     </div>
-                    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Actualización Requerida</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <h2 className="text-xl font-extrabold text-slate-900">Actualización Requerida</h2>
+                    <p className="text-xs text-slate-500 mt-1">
                         Por motivos de seguridad y privacidad clínica, debes establecer tu contraseña personal antes de ingresar al sistema.
                     </p>
                 </div>
 
                 {errorMsg && (
-                    <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300">
+                    <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-xs text-rose-800">
                         <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                         <span>{errorMsg}</span>
                     </div>
@@ -90,7 +90,7 @@ export const ForceChangePasswordModal = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowCurrent(!showCurrent)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                                className="text-slate-400 hover:text-slate-600 focus:outline-none"
                             >
                                 {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -110,7 +110,7 @@ export const ForceChangePasswordModal = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowNew(!showNew)}
-                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                                    className="text-slate-400 hover:text-slate-600 focus:outline-none"
                                 >
                                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
@@ -119,31 +119,31 @@ export const ForceChangePasswordModal = () => {
 
                         {/* Checklist interactivo de requisitos de seguridad */}
                         {newPassword.length > 0 && (
-                            <div className="grid grid-cols-2 gap-2 text-xs p-3 mt-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
-                                <span className={`flex items-center gap-1.5 font-medium ${hasMinLength ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                            <div className="grid grid-cols-2 gap-2 text-xs p-3 mt-2 bg-slate-50 rounded-xl border border-slate-200">
+                                <span className={`flex items-center gap-1.5 font-medium ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
                                     Mínimo 8 caracteres
                                 </span>
-                                <span className={`flex items-center gap-1.5 font-medium ${hasUppercase ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    {hasUppercase ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                                <span className={`flex items-center gap-1.5 font-medium ${hasUppercase ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasUppercase ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
                                     Una Mayúscula (A-Z)
                                 </span>
-                                <span className={`flex items-center gap-1.5 font-medium ${hasNumber ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    {hasNumber ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                                <span className={`flex items-center gap-1.5 font-medium ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasNumber ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
                                     Un Número (0-9)
                                 </span>
-                                <span className={`flex items-center gap-1.5 font-medium ${hasSpecialChar ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    {hasSpecialChar ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
+                                <span className={`flex items-center gap-1.5 font-medium ${hasSpecialChar ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                                    {hasSpecialChar ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <X className="w-3.5 h-3.5 text-slate-400" />}
                                     Símbolo (!@#$%)
                                 </span>
                             </div>
                         )}
 
                         {/* Recomendación de ejemplo con alto contraste */}
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-                            <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-2">
+                            <Sparkles className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                             <span>Ejemplo recomendado:</span>
-                            <code className="bg-slate-100 dark:bg-slate-700 text-teal-700 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600">
+                            <code className="bg-slate-100 text-teal-700 font-bold px-1.5 py-0.5 rounded border border-slate-200">
                                 Fisio#2026
                             </code>
                         </div>
@@ -161,7 +161,7 @@ export const ForceChangePasswordModal = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowConfirm(!showConfirm)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                                className="text-slate-400 hover:text-slate-600 focus:outline-none"
                             >
                                 {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -183,7 +183,7 @@ export const ForceChangePasswordModal = () => {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="w-full text-slate-500 dark:text-slate-400"
+                            className="w-full text-slate-500"
                             onClick={logout}
                             leftIcon={<LogOut className="w-4 h-4" />}
                         >

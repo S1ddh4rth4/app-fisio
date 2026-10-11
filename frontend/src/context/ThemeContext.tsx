@@ -21,11 +21,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [color, setColorState] = useState<AccentColor>('teal');
 
     // Al cambiar de usuario, cargar de inmediato su configuración personal
-    // Si no hay sesión iniciada, la pantalla SIEMPRE debe ser blanca (modo claro original)
+    // Si no hay sesión iniciada o si entra por primera vez (cambio de clave), SIEMPRE debe ser blanca (modo claro)
     useEffect(() => {
         const root = document.documentElement;
 
-        if (!username) {
+        if (!username || user?.mustChangePassword) {
             setTheme('light');
             setColorState('teal');
             root.classList.remove('dark');
@@ -43,11 +43,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         if (savedTheme === 'dark') {
             root.classList.add('dark');
+            root.style.colorScheme = 'dark';
         } else {
             root.classList.remove('dark');
+            root.style.colorScheme = 'light';
         }
         root.setAttribute('data-color', savedColor);
-    }, [username]);
+    }, [username, user?.mustChangePassword]);
 
     const toggleTheme = () => {
         const nextTheme: ThemeMode = theme === 'light' ? 'dark' : 'light';

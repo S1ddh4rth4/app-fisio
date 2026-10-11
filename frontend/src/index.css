@@ -7,6 +7,11 @@
     --app-primary-500: #14b8a6;
     --app-primary-50: #f0fdfa;
     --app-primary-100: #ccfbf1;
+    --color-teal-600: var(--app-primary-600);
+    --color-teal-700: var(--app-primary-700);
+    --color-teal-500: var(--app-primary-500);
+    --color-teal-50: var(--app-primary-50);
+    --color-teal-100: var(--app-primary-100);
 }
 
 [data-color="blue"] {
@@ -39,14 +44,6 @@
     --app-primary-500: #f59e0b;
     --app-primary-50: #fffbeb;
     --app-primary-100: #fef3c7;
-}
-
-@theme {
-    --color-teal-600: var(--app-primary-600);
-    --color-teal-700: var(--app-primary-700);
-    --color-teal-500: var(--app-primary-500);
-    --color-teal-50: var(--app-primary-50);
-    --color-teal-100: var(--app-primary-100);
 }
 
 /* ================= MODO OSCURO GLOBAL (SOLO PARA PANTALLA) ================= */
@@ -91,19 +88,10 @@
     background-color: #1e293b !important;
 }
 
-/* Campos de entrada: solo se oscurecen cuando la aplicación está autenticada y en .dark */
-.dark input:not([type="checkbox"]):not([type="radio"]) {
-    background-color: #1e293b !important;
-    color: #f8fafc !important;
-    border-color: #334155 !important;
-}
-
-.dark label {
-    color: #e2e8f0 !important;
-}
-
-/* Inputs y labels en modo oscuro cuando hay sesión iniciada */
-.dark input:not([type="checkbox"]):not([type="radio"]) {
+/* Campos de entrada y selectores: solo se oscurecen cuando la aplicación está en .dark */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
     background-color: #1e293b !important;
     color: #f8fafc !important;
     border-color: #334155 !important;
