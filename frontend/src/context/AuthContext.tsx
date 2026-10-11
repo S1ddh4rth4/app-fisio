@@ -3,10 +3,11 @@ import type { UserSession } from '../types/auth';
 
 interface AuthContextType {
     user: UserSession | null;
-    login: (data: { token: string; username: string; email: string; roles: string }) => void;
+    login: (data: { token: string; username: string; email: string; roles: string; mustChangePassword?: boolean }) => void;
     logout: () => void;
     isAuthenticated: boolean;
     hasRole: (role: string) => boolean;
+    clearMustChangePassword: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const username = localStorage.getItem('username');
         const email = localStorage.getItem('email');
         const rolesStr = localStorage.getItem('roles');
+        const mustChange = localStorage.getItem('mustChangePassword') === 'true';
 
         if (token && username) {
             setUser({
@@ -26,26 +28,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 username,
                 email: email || '',
                 roles: rolesStr ? rolesStr.split(',') : [],
+                mustChangePassword: mustChange,
             });
         }
     }, []);
 
-    const login = (data: { token: string; username: string; email: string; roles: string }) => {
+    const login = (data: { token: string; username: string; email: string; roles: string; mustChangePassword?: boolean }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
         localStorage.setItem('email', data.email);
         localStorage.setItem('roles', data.roles);
+        localStorage.setItem('mustChangePassword', String(data.mustChangePassword ?? false));
 
         setUser({
             token: data.token,
             username: data.username,
             email: data.email,
             roles: data.roles.split(','),
+            mustChangePassword: data.mustChangePassword ?? false,
         });
     };
 
+    const clearMustChangePassword = () => {
+        localStorage.setItem('mustChangePassword', 'false');
+        setUser((prev) => prev ? { ...prev, mustChangePassword: false } : null);
+    };
+
     const logout = () => {
-        localStorage.clear();
+        // Solo eliminamos los datos de la sesión activa, conservando los temas guardados
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('email');
+        localStorage.removeItem('roles');
+        localStorage.removeItem('mustChangePassword');
         setUser(null);
     };
 
@@ -54,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, hasRole }}>
+        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, hasRole, clearMustChangePassword }}>
             {children}
         </AuthContext.Provider>
     );

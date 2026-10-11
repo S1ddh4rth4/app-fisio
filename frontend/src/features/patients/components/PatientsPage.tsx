@@ -21,7 +21,7 @@ import {
 export const PatientsPage = () => {
     const navigate = useNavigate();
     const { hasRole } = useAuth();
-    const isAdmin = hasRole('ROLE_ADMIN') || hasRole('ROLE_RECEPCION');
+    const isStaff = hasRole('ROLE_ADMIN') || hasRole('ROLE_FISIOTERAPEUTA') || hasRole('ROLE_RECEPCION');
     const [patients, setPatients] = useState<PatientDTO[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -45,8 +45,9 @@ export const PatientsPage = () => {
         fetchPatients();
     }, []);
 
-    const handleCreated = (newPatient: PatientDTO) => {
-        setPatients((prev) => [newPatient, ...prev]);
+    const handleCreated = (newPatient: any) => {
+        // Al registrarse un paciente, forzamos visualmente a que nazca "Activo" en la pantalla
+        setPatients((prev) => [{ ...newPatient, enabled: true }, ...prev]);
     };
 
     const filteredPatients = patients.filter(
@@ -54,6 +55,22 @@ export const PatientsPage = () => {
             p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Función de Data Masking
+    const maskEmail = (email: string) => {
+        // Los administradores tienen autorización de máximo nivel para ver datos crudos
+        if (hasRole('ROLE_ADMIN')) return email;
+
+        if (!email || !email.includes('@')) return email;
+        const [local, domain] = email.split('@');
+
+        // Si el correo es muy corto, solo mostramos la primera letra
+        if (local.length <= 2) return `${local[0]}***@${domain}`;
+
+        // Muestra la primera y última letra (Ej: u****a@gmail.com)
+        const maskedLocal = `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}`;
+        return `${maskedLocal}@${domain}`;
+    };
 
     return (
         <div className="space-y-6">
@@ -71,7 +88,7 @@ export const PatientsPage = () => {
                     </p>
                 </div>
 
-                {isAdmin && (
+                {isStaff && (
                     <Button
                         variant="primary"
                         size="md"
@@ -113,20 +130,14 @@ export const PatientsPage = () => {
                         <Users className="w-8 h-8" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">
-                        {searchTerm
-                            ? 'No se encontraron coincidencias'
-                            : isAdmin
-                                ? 'No hay pacientes registrados'
-                                : 'Sin pacientes asignados'}
+                        {searchTerm ? 'No se encontraron coincidencias' : 'Sin pacientes registrados'}
                     </h3>
                     <p className="text-sm text-slate-500 max-w-sm mt-1 mb-6">
                         {searchTerm
                             ? 'Intenta con otro término de búsqueda.'
-                            : isAdmin
-                                ? 'Empieza registrando al primer paciente de la clínica.'
-                                : 'Aún no tienes pacientes asignados. Las citas que se programen contigo aparecerán aquí.'}
+                            : 'Comienza registrando a tu primer paciente para agendar citas y crear expedientes.'}
                     </p>
-                    {!searchTerm && isAdmin && (
+                    {!searchTerm && isStaff && (
                         <Button
                             variant="primary"
                             size="md"
@@ -152,9 +163,15 @@ export const PatientsPage = () => {
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-slate-900 text-base">{patient.username}</h3>
-                                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-0.5">
-                                                <ShieldCheck className="w-3 h-3" /> Activo
-                                            </span>
+                                            {patient.enabled ? (
+                                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-0.5">
+                                                    <ShieldCheck className="w-3 h-3" /> Activo
+                                                </span>
+                                            ) : (
+                                                <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-0.5">
+                                                    <AlertCircle className="w-3 h-3" /> Inactivo
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -162,31 +179,56 @@ export const PatientsPage = () => {
                                 <div className="space-y-2 text-sm text-slate-600">
                                     <div className="flex items-center gap-2">
                                         <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                                        <span className="truncate">{patient.email}</span>
+                                        {/* Aplicamos la máscara en tiempo real */}
+                                        <span className="truncate">{maskEmail(patient.email)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Botones de Acción Rápida */}
-                            <div className="flex gap-2 pt-4 mt-4 border-t border-slate-100">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 text-xs"
-                                    leftIcon={<Calendar className="w-4 h-4" />}
-                                    onClick={() => navigate('/appointments')}
-                                >
-                                    Citas
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="flex-1 text-xs"
-                                    leftIcon={<FileText className="w-4 h-4" />}
-                                    onClick={() => navigate('/records')}
-                                >
-                                    Expediente
-                                </Button>
+                            <div className="flex flex-col gap-2 pt-4 mt-4 border-t border-slate-100">
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 text-xs"
+                                        leftIcon={<Calendar className="w-4 h-4" />}
+                                        onClick={() => navigate('/appointments')}
+                                    >
+                                        Citas
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="flex-1 text-xs"
+                                        leftIcon={<FileText className="w-4 h-4" />}
+                                        onClick={() => navigate(`/records?patient=${patient.username}`)}
+                                    >
+                                        Expediente
+                                    </Button>
+                                </div>
+
+                                {/* Botón exclusivo de administradores (Derecho al Olvido) */}
+                                {hasRole('ROLE_ADMIN') && patient.enabled && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full text-xs border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                        leftIcon={<AlertCircle className="w-4 h-4" />}
+                                        onClick={async () => {
+                                            if (window.confirm("⚠️ ALERTA LEGAL: ¿Seguro que deseas eliminar y anonimizar a este paciente de forma irreversible?")) {
+                                                try {
+                                                    await patientService.delete(patient.id);
+                                                    fetchPatients(); // Recargar lista
+                                                    alert("Paciente anonimizado con éxito.");
+                                                } catch (e) {
+                                                    alert("Error al intentar eliminar. Verifica tus permisos.");
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        Ejecutar Derecho al Olvido
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     ))}

@@ -19,9 +19,9 @@ public class TreatmentController {
 
     private final TreatmentService treatmentService;
 
-    // Solo los administradores pueden añadir nuevos tratamientos al catálogo
+    // Administradores y Fisioterapeutas pueden añadir tratamientos a su catálogo
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
     public ResponseEntity<TreatmentResponseDTO> createTreatment(@Valid @RequestBody TreatmentRequestDTO request) {
         TreatmentResponseDTO response = treatmentService.createTreatment(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -41,18 +41,18 @@ public class TreatmentController {
         return ResponseEntity.ok(treatmentService.getTreatmentById(id));
     }
 
-    // Actualizar un tratamiento (Solo ADMIN)
+    // Actualizar un tratamiento (ADMIN o FISIOTERAPEUTA propietario)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
     public ResponseEntity<TreatmentResponseDTO> updateTreatment(
             @PathVariable String id,
             @Valid @RequestBody TreatmentRequestDTO request) {
         return ResponseEntity.ok(treatmentService.updateTreatment(id, request));
     }
 
-    // Eliminar un tratamiento (Solo ADMIN)
+    // Eliminar un tratamiento (ADMIN o FISIOTERAPEUTA propietario)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
     public ResponseEntity<Void> deleteTreatment(@PathVariable String id) {
         treatmentService.deleteTreatment(id);
         return ResponseEntity.noContent().build();

@@ -24,6 +24,8 @@ public class AppointmentRequestDTO {
     private LocalDateTime appointmentDate;
 
     @NotBlank(message = "El motivo de la consulta es obligatorio.")
-    private String reason;
+    private String reason; // Lo usaremos para tus Notas u Observaciones libres
+
+    private String appointmentType; // Para el ComboBox: VALORACION_INICIAL o REHABILITACION
 
 }

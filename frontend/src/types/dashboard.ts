@@ -5,4 +5,5 @@ export interface DashboardSummaryDTO {
     totalPatientsCount: number;
     totalTreatmentsCount: number;
     upcomingAppointments: AppointmentResponseDTO[];
+    totalIncomeToday?: number;
 }

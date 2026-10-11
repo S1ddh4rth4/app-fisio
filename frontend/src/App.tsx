@@ -21,6 +21,10 @@ import {
 } from 'lucide-react';
 import { ProfilePage } from './features/profile/components/ProfilePage';
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
+import { PrescriptionsPage } from './features/prescriptions/components/PrescriptionsPage';
+import { ForceChangePasswordModal } from './features/auth/components/ForceChangePasswordModal';
+import { ThemeProvider } from './context/ThemeContext';
+import { StaffPage } from './features/staff/components/StaffPage';
 
 // Vista de Inicio / Dashboard Personalizado por Rol
 function DashboardView() {
@@ -147,16 +151,23 @@ function DashboardView() {
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Disponibilidad</span>
-              <div className="p-2 bg-teal-50 text-teal-600 rounded-xl">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <TrendingUp className="w-24 h-24 text-emerald-400" />
+            </div>
+            <div className="flex items-center justify-between text-slate-300 mb-3 relative z-10">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Ingresos del Día</span>
+              <div className="p-2 bg-slate-800/50 text-emerald-400 rounded-xl backdrop-blur-md border border-slate-700">
                 <TrendingUp className="w-5 h-5" />
               </div>
             </div>
-            <div className="flex items-baseline justify-between">
-              <p className="text-3xl font-extrabold text-teal-600">100%</p>
-              <span className="text-xs font-medium text-slate-500">Operativo</span>
+            <div className="flex items-baseline justify-between relative z-10 mt-2">
+              <p className="text-3xl font-extrabold text-white">
+                ${isLoading ? '...' : (summary?.totalIncomeToday ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </p>
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20">
+                Corte de Caja
+              </span>
             </div>
           </div>
         </div>
@@ -264,10 +275,15 @@ function DashboardView() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
     return <LoginForm />;
+  }
+
+  // Candado de seguridad: Si tiene contraseña temporal, bloquear el acceso
+  if (user?.mustChangePassword) {
+    return <ForceChangePasswordModal />;
   }
 
   return (
@@ -278,14 +294,20 @@ function AppRoutes() {
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/treatments" element={<TreatmentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/prescriptions" element={<PrescriptionsPage />} />
 
         {/* Rutas exclusivas para Personal Clínico (Pacientes y Expedientes) */}
         <Route element={<RoleProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_FISIOTERAPEUTA', 'ROLE_RECEPCION']} />}>
           <Route path="/patients" element={<PatientsPage />} />
         </Route>
 
-        <Route element={<RoleProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_FISIOTERAPEUTA']} />}>
+        <Route element={<RoleProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_FISIOTERAPEUTA', 'ROLE_PACIENTE']} />}>
           <Route path="/records" element={<RecordsPage />} />
+        </Route>
+
+        {/* Ruta exclusiva para Administradores (Gestión del Personal Clínico) */}
+        <Route element={<RoleProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+          <Route path="/staff" element={<StaffPage />} />
         </Route>
       </Route>
 
@@ -298,7 +320,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ThemeProvider>
+          <AppRoutes />
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

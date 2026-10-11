@@ -29,19 +29,20 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final UserService userService;
+    private final com.fisitec.appfisio.service.MfaService mfaService;
 
     /**
-     * Register a new user.
+     * Registra un nuevo usuario en la plataforma con rol por defecto de Paciente.
      * 
-     * @param request the registration request
-     * @return the authentication response with token
+     * @param request Datos de registro (nombre de usuario, correo y contraseña).
+     * @return DTO con la información pública del usuario creado.
      */
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "Creates a new user account with default role")
     public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
 
         User user = authService.register(request.getUsername(), request.getEmail(), request.getPassword(),
-                request.getRole());
+                "ROLE_PACIENTE");
 
         UserDTO response = userService.convertToDTO(user);
 
@@ -56,16 +57,44 @@ public class AuthController {
      */
     @PostMapping("/login")
     @Operation(summary = "Login user", description = "Authenticates a user and returns JWT token")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            // Pasamos el código de 6 dígitos (puede venir nulo la primera vez)
+            String token = authService.login(request.getLoginIdentifier(), request.getPassword(), request.getMfaCode());
+            String username = jwtService.extractUsername(token);
+            User user = userService.findByUsername(username).orElseThrow();
+            String roles = user.getRoles().stream().map(role -> role.getName()).reduce("", (a, b) -> a + "," + b);
+            if (roles.startsWith(","))
+                roles = roles.substring(1);
 
-        String token = authService.login(request.getLoginIdentifier(), request.getPassword());
-        String username = jwtService.extractUsername(token);
+            return ResponseEntity.ok(
+                    new AuthResponse(token, user.getUsername(), user.getEmail(), roles, user.getMustChangePassword()));
+
+        } catch (RuntimeException e) {
+            if ("MFA_REQUIRED".equals(e.getMessage())) {
+                // El frontend recibirá este error 401 y sabrá que debe mostrar la cajita de 6
+                // dígitos
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("MFA_REQUIRED");
+            }
+            throw e;
+        }
+    }
+
+    // Endpoint temporal para activar el 2FA al fisio
+    @GetMapping("/setup-mfa/{username}")
+    public ResponseEntity<String> setupMfa(@PathVariable String username) {
         User user = userService.findByUsername(username).orElseThrow();
-        String roles = user.getRoles().stream().map(role -> role.getName()).reduce("", (a, b) -> a + "," + b);
-        if (roles.startsWith(","))
-            roles = roles.substring(1);
-        AuthResponse response = new AuthResponse(token, user.getUsername(), user.getEmail(), roles);
-        return ResponseEntity.ok(response);
 
+        String secret = mfaService.generateSecret();
+
+        // 1. Asignamos los valores limpiamente usando los Setters nativos
+        user.setMfaSecret(secret);
+        user.setMfaEnabled(true);
+
+        // 2. Guardamos pasando por el Servicio oficial
+        userService.updateUser(user);
+
+        // 3. Devolvemos la URI pura
+        return ResponseEntity.ok(mfaService.getQrCodeUri(secret, username));
     }
 }

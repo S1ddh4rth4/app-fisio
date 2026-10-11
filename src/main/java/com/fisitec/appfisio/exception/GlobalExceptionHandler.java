@@ -13,17 +13,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Global exception handler for the application.
- * Handles various exceptions and returns appropriate HTTP responses.
+ * Manejador global de excepciones para toda la API REST.
+ * Centraliza y estandariza los códigos de error HTTP y respuestas JSON.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Handle validation errors (@Valid).
-     * 
-     * @param ex the validation exception
-     * @return error response
+     * Maneja errores de validación de campos (@Valid en DTOs de entrada).
+     * Devuelve cada campo con su mensaje de error correspondiente.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -34,29 +32,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle bad credentials exception.
-     * 
-     * @param ex the bad credentials exception
-     * @return error response
+     * Maneja fallos de autenticación por credenciales incorrectas.
      */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Invalid credentials");
-        error.put("message", ex.getMessage());
+        error.put("error", "Credenciales incorrectas");
+        error.put("message", "El nombre de usuario, correo o contraseña ingresados no coinciden.");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     /**
-     * Handle illegal argument exceptions (reglas de negocio).
+     * Handle illegal argument and illegal state exceptions (reglas de negocio y
+     * blindaje de expediente).
      * 
-     * @param ex the illegal argument exception
-     * @return error response
+     * @param ex the exception
+     * @return error response claro con código 400
      */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
+    public ResponseEntity<Map<String, String>> handleBusinessExceptions(RuntimeException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Bad request");
+        error.put("error", "Regla de Negocio");
         error.put("message", ex.getMessage());
         return ResponseEntity.badRequest().body(error);
     }
@@ -99,6 +95,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+        ex.printStackTrace(); // <-- AGREGADO PARA QUE SPRING BOOT IMPRIMA EL ERROR EN TERMINAL
         Map<String, String> error = new HashMap<>();
         error.put("error", "Internal server error");
         error.put("message", "Ocurrió un error interno en el servidor. Por favor, intenta de nuevo.");

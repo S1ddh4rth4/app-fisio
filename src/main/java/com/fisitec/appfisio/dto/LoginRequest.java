@@ -4,7 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO for user login request.
+ * Contrato de entrada (DTO) para la solicitud de inicio de sesión.
  */
 @Data
 public class LoginRequest {
@@ -20,4 +20,7 @@ public class LoginRequest {
      */
     @NotBlank(message = "Password is required")
     private String password;
+
+    // Código de 6 dígitos opcional (solo se usa si el 2FA está activado)
+    private String mfaCode;
 }

@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class GoogleCalendarService {
 
     // Extrae las variables de tu application.properties
@@ -43,7 +46,7 @@ public class GoogleCalendarService {
     public void init() {
         try {
             if (credentialsPath == null || credentialsPath.isBlank()) {
-                System.out.println("⚠️ Google Calendar credentialsPath no configurado. Servicio en modo inactivo.");
+                log.warn("Google Calendar credentialsPath no configurado. Servicio en modo inactivo.");
                 return;
             }
 
@@ -51,8 +54,9 @@ public class GoogleCalendarService {
             InputStream in = getClass().getResourceAsStream(fileName);
 
             if (in == null) {
-                System.out.println("⚠️ No se encontró el archivo de credenciales de Google: " + fileName
-                        + ". Google Calendar funcionará en modo simulado.");
+                log.warn(
+                        "No se encontró el archivo de credenciales de Google: {}. Google Calendar funcionará en modo simulado.",
+                        fileName);
                 return;
             }
 
@@ -66,9 +70,9 @@ public class GoogleCalendarService {
                     .setApplicationName("App Fisio")
                     .build();
 
-            System.out.println("✅ Google Calendar Service inicializado correctamente.");
+            log.info("Google Calendar Service inicializado correctamente.");
         } catch (Exception e) {
-            System.err.println("⚠️ Error al inicializar Google Calendar: " + e.getMessage());
+            log.error("Error al inicializar Google Calendar: {}", e.getMessage(), e);
         }
     }
 
@@ -81,12 +85,18 @@ public class GoogleCalendarService {
                 .setSummary("Cita Fisioterapia: " + request.getPacienteName())
                 .setDescription("Motivo: " + request.getReason() + "\nProfesional ID: " + request.getProfesionalID());
 
-        // 2. Convertir nuestras fechas de Java a Fechas de Google
-        ZonedDateTime startZdt = request.getStartDateTime().atZone(ZoneId.systemDefault());
-        ZonedDateTime endZdt = request.getEndDateTime().atZone(ZoneId.systemDefault());
+        // 2. Convertir nuestras fechas forzando la zona horaria de la clínica
+        ZoneId clinicZone = ZoneId.of("America/Mexico_City");
+        ZonedDateTime startZdt = request.getStartDateTime().atZone(clinicZone);
+        ZonedDateTime endZdt = request.getEndDateTime().atZone(clinicZone);
 
-        EventDateTime start = new EventDateTime().setDateTime(new DateTime(startZdt.toInstant().toEpochMilli()));
-        EventDateTime end = new EventDateTime().setDateTime(new DateTime(endZdt.toInstant().toEpochMilli()));
+        EventDateTime start = new EventDateTime()
+                .setDateTime(new DateTime(startZdt.toInstant().toEpochMilli()))
+                .setTimeZone("America/Mexico_City");
+
+        EventDateTime end = new EventDateTime()
+                .setDateTime(new DateTime(endZdt.toInstant().toEpochMilli()))
+                .setTimeZone("America/Mexico_City");
 
         event.setStart(start);
         event.setEnd(end);

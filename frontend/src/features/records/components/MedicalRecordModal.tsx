@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { X, Activity, User, Calendar, AlertCircle, FileText } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { medicalRecordService } from '../services/medicalRecordService';
+import { appointmentService } from '../../appointments/services/appointmentService';
+import type { AppointmentResponseDTO } from '../../../types/appointment';
 import type { MedicalRecordResponseDTO } from '../../../types/medicalRecord';
-import { X, User, Activity, FileText, AlertCircle, Hash } from 'lucide-react';
 
 interface MedicalRecordModalProps {
     isOpen: boolean;
@@ -20,10 +22,21 @@ export const MedicalRecordModal = ({
 }: MedicalRecordModalProps) => {
     const [patientId, setPatientId] = useState(defaultPatientId);
     const [appointmentId, setAppointmentId] = useState('');
+    const [patientAppointments, setPatientAppointments] = useState<AppointmentResponseDTO[]>([]);
     const [diagnosis, setDiagnosis] = useState('');
     const [notes, setNotes] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // Cargar citas reales del paciente al abrir el modal
+    useEffect(() => {
+        setPatientId(defaultPatientId);
+        if (defaultPatientId) {
+            appointmentService.getByPatient(defaultPatientId)
+                .then(appts => setPatientAppointments(appts))
+                .catch(() => setPatientAppointments([]));
+        }
+    }, [defaultPatientId]);
 
     if (!isOpen) return null;
 
@@ -87,14 +100,28 @@ export const MedicalRecordModal = ({
                             leftIcon={<User className="w-5 h-5" />}
                         />
 
-                        <Input
-                            label="ID de Cita (Opcional)"
-                            type="number"
-                            placeholder="ej. 1"
-                            value={appointmentId}
-                            onChange={(e) => setAppointmentId(e.target.value)}
-                            leftIcon={<Hash className="w-5 h-5" />}
-                        />
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                                Cita Asociada (Opcional)
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <select
+                                    value={appointmentId}
+                                    onChange={(e) => setAppointmentId(e.target.value)}
+                                    className="w-full h-11 pl-11 pr-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                >
+                                    <option value="">-- Sin cita / Consulta espontánea --</option>
+                                    {patientAppointments.map((apt) => (
+                                        <option key={apt.id} value={apt.id}>
+                                            Cita #{apt.id} ({apt.status})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <Input

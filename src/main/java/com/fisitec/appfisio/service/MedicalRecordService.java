@@ -52,7 +52,9 @@ public class MedicalRecordService {
                                 .notes(request.getNotes())
                                 .build();
 
-                MedicalRecord savedRecord = medicalRecordRepository.save(record);
+                // saveAndFlush obliga a la base de datos a generar y devolver la fecha
+                // inmediatamente
+                MedicalRecord savedRecord = medicalRecordRepository.saveAndFlush(record);
                 return mapToDTO(savedRecord);
         }
 

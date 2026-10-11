@@ -2,20 +2,20 @@ import api from '../../../api/axios';
 import type { PatientDTO } from '../../../types/patient';
 
 export const patientService = {
-    // Obtener todos los pacientes
+    // Obtener listado de pacientes
     getAll: async (): Promise<PatientDTO[]> => {
         const response = await api.get<PatientDTO[]>('/v1/patients');
         return response.data;
     },
 
-    // Registrar un nuevo paciente utilizando el endpoint de Auth
-    create: async (data: { username: string; email: string; password?: string }): Promise<PatientDTO> => {
-        const response = await api.post<PatientDTO>('/auth/register', {
-            username: data.username,
-            email: data.email,
-            password: data.password || 'paciente123',
-            role: 'ROLE_PACIENTE',
-        });
+    // Registrar paciente rápido con Nombre y Correo
+    create: async (data: { fullName: string; email: string; acceptsPrivacyPolicy: boolean }): Promise<PatientDTO> => {
+        const response = await api.post<PatientDTO>('/v1/patients', data);
         return response.data;
+    },
+
+    // Llamada destructiva Fase 4
+    delete: async (patientId: string): Promise<void> => {
+        await api.delete(`/v1/patients/${patientId}`);
     },
 };

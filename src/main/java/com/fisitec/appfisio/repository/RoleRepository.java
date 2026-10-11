@@ -6,16 +6,14 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Repository interface for Role entity.
- * Provides CRUD operations and custom queries for roles.
+ * Repositorio Spring Data JPA para la entidad de Roles y Permisos.
  */
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
     /**
-     * Find a role by its name.
-     * @param name the role name (e.g., "ROLE_ADMIN")
-     * @return Optional containing the role if found
+     * Busca un rol por su nombre oficial (ej. "ROLE_ADMIN", "ROLE_FISIOTERAPEUTA",
+     * "ROLE_PACIENTE").
      */
     Optional<Role> findByName(String name);
 }

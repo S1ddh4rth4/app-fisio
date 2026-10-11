@@ -5,6 +5,8 @@ import {
     Sparkles,
     LayoutDashboard,
     UserCircle,
+    Dumbbell,
+    UserCheck,
     type LucideIcon
 } from 'lucide-react';
 
@@ -27,6 +29,11 @@ export const navItems: NavItem[] = [
         icon: Calendar,
     },
     {
+        label: 'Prescripciones',
+        path: '/prescriptions',
+        icon: Dumbbell,
+    },
+    {
         label: 'Pacientes',
         path: '/patients',
         icon: Users,
@@ -36,12 +43,18 @@ export const navItems: NavItem[] = [
         label: 'Expedientes',
         path: '/records',
         icon: FileText,
-        roles: ['ROLE_ADMIN', 'ROLE_FISIOTERAPEUTA'],
+        roles: ['ROLE_ADMIN', 'ROLE_FISIOTERAPEUTA', 'ROLE_PACIENTE'],
     },
     {
         label: 'Tratamientos',
         path: '/treatments',
         icon: Sparkles,
+    },
+    {
+        label: 'Equipo',
+        path: '/staff',
+        icon: UserCheck,
+        roles: ['ROLE_ADMIN'],
     },
     {
         label: 'Perfil',

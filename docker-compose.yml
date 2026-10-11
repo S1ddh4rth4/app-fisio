@@ -1,0 +1,58 @@
+services:
+  oracledb:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: appfisio-oracle
+    restart: always
+    environment:
+      - ORACLE_PASSWORD=oracle
+      - APP_USER=appfisio
+      - APP_USER_PASSWORD=appfisio
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fisio-backend
+    restart: always
+    depends_on:
+      oracledb:
+        condition: service_healthy
+    environment:
+      TZ: America/Mexico_City
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracledb:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: appfisio
+      SPRING_DATASOURCE_PASSWORD: appfisio
+      JWT_SECRET: ${JWT_SECRET:-super_secreta_clave_de_32_caracteres_minimo}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fisio-frontend
+    restart: always
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+
+volumes:
+  oracle_data:

@@ -11,6 +11,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
@@ -32,7 +33,11 @@ public class Treatment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @jakarta.persistence.JoinColumn(name = "physiotherapist_id", nullable = true)
+    private User physiotherapist; // Propietario del tratamiento (null = Global de la clínica)
+
+    @Column(nullable = false)
     private String name;
 
     // Ampliamos a 2000 caracteres para permitir descripciones clínicas completas

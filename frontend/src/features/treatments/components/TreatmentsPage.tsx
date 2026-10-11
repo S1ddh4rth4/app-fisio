@@ -19,7 +19,7 @@ import {
 
 export const TreatmentsPage = () => {
     const { hasRole } = useAuth();
-    const isAdmin = hasRole('ROLE_ADMIN');
+    const canManageTreatments = hasRole('ROLE_ADMIN') || hasRole('ROLE_FISIOTERAPEUTA');
 
     const [treatments, setTreatments] = useState<TreatmentResponseDTO[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +97,7 @@ export const TreatmentsPage = () => {
                     </p>
                 </div>
 
-                {isAdmin && (
+                {canManageTreatments && (
                     <Button
                         variant="primary"
                         size="md"
@@ -149,7 +149,7 @@ export const TreatmentsPage = () => {
                             ? 'Prueba con otro término de búsqueda.'
                             : 'Comienza dando de alta el primer servicio de la clínica.'}
                     </p>
-                    {!searchTerm && isAdmin && (
+                    {!searchTerm && canManageTreatments && (
                         <Button
                             variant="primary"
                             size="md"
@@ -198,8 +198,8 @@ export const TreatmentsPage = () => {
                                     </span>
                                 </div>
 
-                                {/* Acciones de Administración (Editar / Borrar) */}
-                                {isAdmin && (
+                                {/* Acciones de Administración y Fisioterapeuta (Editar / Borrar) */}
+                                {canManageTreatments && (
                                     <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t border-slate-100">
                                         <button
                                             onClick={() => handleEdit(treatment)}
@@ -211,7 +211,7 @@ export const TreatmentsPage = () => {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(treatment.id, treatment.name)}
-                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                                            className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
                                             title="Eliminar Tratamiento"
                                         >
                                             <Trash2 className="w-4 h-4" />
@@ -226,7 +226,7 @@ export const TreatmentsPage = () => {
             )}
 
             {/* Modal */}
-            {isAdmin && (
+            {canManageTreatments && (
                 <TreatmentModal
                     isOpen={isModalOpen}
                     onClose={() => {

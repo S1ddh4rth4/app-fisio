@@ -1,1 +1,256 @@
 @import "tailwindcss";
+
+/* ================= PALETA DE COLORES DINÁMICA ================= */
+:root {
+    --app-primary-600: #0d9488;
+    --app-primary-700: #0f766e;
+    --app-primary-500: #14b8a6;
+    --app-primary-50: #f0fdfa;
+    --app-primary-100: #ccfbf1;
+}
+
+[data-color="blue"] {
+    --app-primary-600: #0284c7;
+    --app-primary-700: #0369a1;
+    --app-primary-500: #0ea5e9;
+    --app-primary-50: #f0f9ff;
+    --app-primary-100: #e0f2fe;
+}
+
+[data-color="purple"] {
+    --app-primary-600: #7c3aed;
+    --app-primary-700: #6d28d9;
+    --app-primary-500: #8b5cf6;
+    --app-primary-50: #f5f3ff;
+    --app-primary-100: #ede9fe;
+}
+
+[data-color="rose"] {
+    --app-primary-600: #e11da6;
+    --app-primary-700: #be12b5;
+    --app-primary-500: #f43fb8;
+    --app-primary-50: #fff1f2;
+    --app-primary-100: #ffe4e6;
+}
+
+[data-color="amber"] {
+    --app-primary-600: #d97706;
+    --app-primary-700: #b45309;
+    --app-primary-500: #f59e0b;
+    --app-primary-50: #fffbeb;
+    --app-primary-100: #fef3c7;
+}
+
+@theme {
+    --color-teal-600: var(--app-primary-600);
+    --color-teal-700: var(--app-primary-700);
+    --color-teal-500: var(--app-primary-500);
+    --color-teal-50: var(--app-primary-50);
+    --color-teal-100: var(--app-primary-100);
+}
+
+/* ================= MODO OSCURO GLOBAL (SOLO PARA PANTALLA) ================= */
+@media screen {
+    .dark {
+        color-scheme: dark;
+    }
+
+    .dark body,
+    .dark .bg-slate-50 {
+        background-color: #090d16 !important;
+        color: #f1f5f9 !important;
+    }
+
+    .dark .bg-white {
+        background-color: #131b2e !important;
+        border-color: #1e293b !important;
+    }
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+    color: #f8fafc !important;
+}
+
+.dark .text-slate-700 {
+    color: #e2e8f0 !important;
+}
+
+/* Letras de notas, explicaciones y subtítulos nítidas en lugar de opacas */
+.dark .text-slate-600,
+.dark .text-slate-500 {
+    color: #cbd5e1 !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100 {
+    border-color: #1e293b !important;
+}
+
+.dark .bg-slate-100 {
+    background-color: #1e293b !important;
+}
+
+/* Campos de entrada: solo se oscurecen cuando la aplicación está autenticada y en .dark */
+.dark input:not([type="checkbox"]):not([type="radio"]) {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+.dark label {
+    color: #e2e8f0 !important;
+}
+
+/* Inputs y labels en modo oscuro cuando hay sesión iniciada */
+.dark input:not([type="checkbox"]):not([type="radio"]) {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+.dark label {
+    color: #e2e8f0 !important;
+}
+
+/* Tarjetas de ejercicios y notas en prescripciones con contraste óptimo */
+.dark [class*="bg-teal-50"] {
+    background-color: #162032 !important;
+    border-color: #24344d !important;
+}
+
+/* Encabezados de éxito/completado en modales y alertas en Modo Oscuro */
+.dark .bg-emerald-50 {
+    background-color: #064e3b44 !important;
+    border-color: #065f46 !important;
+}
+
+.dark .bg-emerald-100 {
+    background-color: #065f46 !important;
+}
+
+.dark .text-emerald-800,
+.dark .text-emerald-700 {
+    color: #6ee7b7 !important;
+}
+
+.dark .text-emerald-600 {
+    color: #a7f3d0 !important;
+}
+
+/* Cajas de resumen y fechas en modales */
+.dark .bg-indigo-50\/50,
+.dark .bg-indigo-50 {
+    background-color: #1e1b4b44 !important;
+    border-color: #3730a3 !important;
+}
+
+.dark .text-indigo-900 {
+    color: #c7d2fe !important;
+}
+
+.dark .text-indigo-700 {
+    color: #a5b4fc !important;
+}
+
+.dark .bg-amber-50 {
+    background-color: #78350f44 !important;
+    border-color: #92400e !important;
+}
+
+.dark .text-teal-800,
+.dark .text-teal-900 {
+    color: #5eead4 !important;
+}
+
+[data-color="blue"].dark .text-teal-800,
+[data-color="blue"].dark .text-teal-900 {
+    color: #7dd3fc !important;
+}
+
+[data-color="purple"].dark .text-teal-800,
+[data-color="purple"].dark .text-teal-900 {
+    color: #c4b5fd !important;
+}
+
+[data-color="rose"].dark .text-teal-800,
+[data-color="rose"].dark .text-teal-900 {
+    color: #f472b6 !important;
+}
+
+[data-color="amber"].dark .text-teal-800,
+[data-color="amber"].dark .text-teal-900 {
+    color: #fcd34d !important;
+}
+
+/* ================= REGLAS DE IMPRESIÓN Y GENERACIÓN DE PDF ================= */
+@media print {
+
+    /* 1. Ocultar absolutamente TODO el contenido de la pantalla para evitar empalmes */
+    body * {
+        visibility: hidden !important;
+    }
+
+    /* 2. Mostrar ÚNICAMENTE el expediente médico y sus elementos */
+    #clinical-history-print,
+    #clinical-history-print * {
+        visibility: visible !important;
+    }
+
+    /* 3. Posicionar el expediente en el inicio de la hoja impresa */
+    #clinical-history-print {
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* 4. Colores clínicos forzados: texto negro puro */
+    #clinical-history-print,
+    #clinical-history-print p,
+    #clinical-history-print span,
+    #clinical-history-print strong,
+    #clinical-history-print td,
+    #clinical-history-print th {
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 5. Banners de sección: recuadro formal con texto negro */
+    #clinical-history-print h2 {
+        background-color: #f1f5f9 !important;
+        color: #000000 !important;
+        border: 1px solid #475569 !important;
+        font-weight: 800 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Tablas clínicas (Página 2 - Evaluación Muscular): encabezados gris claro con texto negro */
+    #clinical-history-print thead tr,
+    #clinical-history-print th {
+        background-color: #f1f5f9 !important;
+        color: #000000 !important;
+        border: 1px solid #64748b !important;
+        font-weight: 800 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    #clinical-history-print td {
+        background-color: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+    }
+
+    /* 6. Saltos de página estrictos */
+    .print-break {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+}

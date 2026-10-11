@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
- * DTO for authentication response.
+ * Objeto de transferencia (DTO) que devuelve el token JWT y los datos de sesión
+ * activa.
  */
 @Data
 @AllArgsConstructor
@@ -29,4 +30,9 @@ public class AuthResponse {
      * Roles of the authenticated user.
      */
     private String roles;
+
+    /**
+     * Bandera para forzar cambio de contraseña en primer login.
+     */
+    private Boolean mustChangePassword;
 }

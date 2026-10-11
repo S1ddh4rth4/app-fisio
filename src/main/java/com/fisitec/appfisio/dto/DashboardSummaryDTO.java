@@ -16,4 +16,5 @@ public class DashboardSummaryDTO {
     private long totalPatientsCount;
     private long totalTreatmentsCount;
     private List<AppointmentResponseDTO> upcomingAppointments;
+    private java.math.BigDecimal totalIncomeToday;
 }

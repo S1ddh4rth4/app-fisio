@@ -20,7 +20,7 @@ public class JwtService {
      * Secret key for signing JWT tokens.
      * In production, this should be stored securely (e.g., environment variable).
      */
-    @Value("${jwt.secret:mySecretKey1234567890123456789012345678901234567890}")
+    @Value("${jwt.secret}")
     private String secretKey;
 
     /**

@@ -30,11 +30,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
         return (
             <div className="w-full text-left">
-                {/* Etiqueta visible y de alto contraste */}
+                {/* Etiqueta visible y de alto contraste (Claro y Oscuro) */}
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="block text-sm font-semibold text-slate-800 mb-1.5"
+                        className="block text-sm font-bold text-slate-700 mb-1.5"
                     >
                         {label}
                         {required && <span className="text-rose-500 ml-1 font-bold">*</span>}
@@ -56,7 +56,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                         disabled={disabled}
                         className={`
               w-full h-12 bg-white text-slate-900 placeholder:text-slate-400
-              text-base rounded-xl border transition-all duration-200
+              text-base rounded-xl border border-slate-300 transition-all duration-200
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
               disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed
               ${leftIcon ? 'pl-11' : 'pl-4'}

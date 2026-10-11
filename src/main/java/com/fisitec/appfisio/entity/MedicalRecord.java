@@ -7,6 +7,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+import com.fisitec.appfisio.security.CryptoConverter;
+
 @Entity
 @Table(name = "medical_records")
 @Getter
@@ -30,15 +32,19 @@ public class MedicalRecord {
     @JoinColumn(name = "physiotherapist_id", nullable = false)
     private User physiotherapist;
 
-    // Relación OPCIONAL con una Cita específica (por si fue una consulta de urgencia sin cita)
+    // Relación OPCIONAL con una Cita específica (por si fue una consulta de
+    // urgencia sin cita)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "appointment_id")
     private Appointment appointment;
 
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false, length = 1000)
     private String diagnosis; // Diagnóstico
 
-    @Column(columnDefinition = "TEXT")
+    @Convert(converter = CryptoConverter.class)
+    @Lob
+    @Column
     private String notes; // Notas de evolución de la sesión
 
     @CreationTimestamp
