@@ -201,7 +201,7 @@ erDiagram
 
 ---
 
-## 🛠️ Bitácora de Ingeniería: Problemas Encontrados, Auditoría y Soluciones Aplicadas
+## Bitácora de Ingeniería: Problemas Encontrados, Auditoría y Soluciones Aplicadas
 
 Durante el desarrollo y las rondas de auditoría arquitectónica, se identificaron y resolvieron retos reales de ingeniería de software que fortalecieron la plataforma:
 
