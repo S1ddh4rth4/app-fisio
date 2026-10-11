@@ -21,15 +21,20 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AuditService auditService;
+    private final MfaService mfaService;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final AuditService auditService; // 🛡️ Inyectamos al Big Brother
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository,
-            @Lazy BCryptPasswordEncoder passwordEncoder, AuditService auditService) {
+    public UserService(UserRepository userRepository,
+            RoleRepository roleRepository,
+            AuditService auditService,
+            MfaService mfaService,
+            @Lazy BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.mfaService = mfaService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -170,6 +175,7 @@ public class UserService {
                 ? user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
                 : java.util.Collections.emptySet());
         dto.setEnabled(user.getEnabled());
+        dto.setMfaEnabled(Boolean.TRUE.equals(user.getMfaEnabled()));
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
@@ -217,6 +223,63 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
         userRepository.save(user);
+    }
+
+    /**
+     * Paso 1 de 2FA: Genera un secreto TOTP y devuelve el código QR sin activar aún
+     * el bloqueo.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, String> setupMfa(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        String secret = mfaService.generateSecret();
+        user.setMfaSecret(secret);
+        userRepository.save(user);
+
+        String qrCodeImage = mfaService.getQrCodeImageBase64(secret, username);
+        return java.util.Map.of(
+                "secret", secret,
+                "qrCodeImage", qrCodeImage);
+    }
+
+    /**
+     * Paso 2 de 2FA: Verifica el código de 6 dígitos del autenticador (Google /
+     * Apple) y activa el 2FA.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void verifyAndEnableMfa(String username, String code) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        if (user.getMfaSecret() == null || user.getMfaSecret().isBlank()) {
+            throw new IllegalStateException("Primero debes generar el código QR de configuración.");
+        }
+
+        if (code == null || !mfaService.verifyCode(user.getMfaSecret(), code.trim())) {
+            throw new IllegalArgumentException(
+                    "El código de 6 dígitos es incorrecto. Verifica la hora de tu dispositivo e intenta de nuevo.");
+        }
+
+        user.setMfaEnabled(true);
+        userRepository.save(user);
+        auditService.logAction(username, "ACTIVAR_2FA", user.getId(), "Autenticación en dos pasos (2FA) activada.");
+    }
+
+    /**
+     * Desactiva la verificación en dos pasos (2FA) de la cuenta actual.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void disableMfa(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        user.setMfaEnabled(false);
+        user.setMfaSecret(null);
+        userRepository.save(user);
+        auditService.logAction(username, "DESACTIVAR_2FA", user.getId(),
+                "Autenticación en dos pasos (2FA) desactivada.");
     }
 
     /**

@@ -10,6 +10,7 @@ export interface UserProfileDTO {
     avatarUrl?: string;
     roles: string[];
     enabled: boolean;
+    mfaEnabled?: boolean;
 }
 
 export interface UserProfileUpdateRequest {
@@ -17,6 +18,11 @@ export interface UserProfileUpdateRequest {
     phone?: string;
     professionalLicense?: string;
     avatarUrl?: string;
+}
+
+export interface MfaSetupResponse {
+    secret: string;
+    qrCodeImage: string;
 }
 
 export const profileService = {
@@ -35,6 +41,24 @@ export const profileService = {
     // Cambiar contraseña de acceso
     changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
         const response = await api.post<{ message: string }>('/v1/users/change-password', data);
+        return response.data;
+    },
+
+    // Iniciar configuración de 2FA (obtener QR y llave secreta)
+    setupMfa: async (): Promise<MfaSetupResponse> => {
+        const response = await api.post<MfaSetupResponse>('/v1/users/mfa/setup');
+        return response.data;
+    },
+
+    // Confirmar código de 6 dígitos y activar 2FA
+    verifyMfa: async (code: string): Promise<{ message: string }> => {
+        const response = await api.post<{ message: string }>('/v1/users/mfa/verify', { code });
+        return response.data;
+    },
+
+    // Desactivar 2FA
+    disableMfa: async (): Promise<{ message: string }> => {
+        const response = await api.post<{ message: string }>('/v1/users/mfa/disable');
         return response.data;
     },
 };

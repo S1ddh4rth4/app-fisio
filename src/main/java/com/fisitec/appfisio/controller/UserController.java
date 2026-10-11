@@ -65,4 +65,33 @@ public class UserController {
         userService.changePassword(authentication.getName(), request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(Map.of("message", "Contraseña actualizada exitosamente"));
     }
+
+    /**
+     * Genera la llave secreta y el código QR en Base64 para configurar Google /
+     * Apple Authenticator.
+     */
+    @PostMapping("/mfa/setup")
+    public ResponseEntity<Map<String, String>> setupMfa(Authentication authentication) {
+        return ResponseEntity.ok(userService.setupMfa(authentication.getName()));
+    }
+
+    /**
+     * Confirma el código de 6 dígitos y activa formalmente el 2FA en la cuenta.
+     */
+    @PostMapping("/mfa/verify")
+    public ResponseEntity<Map<String, String>> verifyMfa(
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        userService.verifyAndEnableMfa(authentication.getName(), body.get("code"));
+        return ResponseEntity.ok(Map.of("message", "Verificación en 2 pasos (2FA) activada exitosamente."));
+    }
+
+    /**
+     * Desactiva la verificación en 2 pasos (2FA) para el usuario autenticado.
+     */
+    @PostMapping("/mfa/disable")
+    public ResponseEntity<Map<String, String>> disableMfa(Authentication authentication) {
+        userService.disableMfa(authentication.getName());
+        return ResponseEntity.ok(Map.of("message", "Verificación en 2 pasos (2FA) desactivada."));
+    }
 }

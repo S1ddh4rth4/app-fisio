@@ -59,6 +59,11 @@ public class UserDTO {
     private Boolean enabled;
 
     /**
+     * Indica si el usuario tiene activa la verificación en dos pasos (2FA).
+     */
+    private Boolean mfaEnabled;
+
+    /**
      * Fecha y hora de creación de la cuenta.
      */
     private LocalDateTime createdAt;

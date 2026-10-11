@@ -15,7 +15,9 @@ import {
     Lightbulb,
     Check,
     X,
-    Save
+    Save,
+    ShieldCheck,
+    Smartphone
 } from 'lucide-react';
 
 export const ProfilePage = () => {
@@ -39,6 +41,15 @@ export const ProfilePage = () => {
     const [passwordSuccessMsg, setPasswordSuccessMsg] = useState<string | null>(null);
     const [passwordErrorMsg, setPasswordErrorMsg] = useState<string | null>(null);
 
+    // Estado de Autenticación en Dos Pasos (2FA)
+    const [mfaEnabled, setMfaEnabled] = useState(false);
+    const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+    const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [isMfaLoading, setIsMfaLoading] = useState(false);
+    const [mfaSuccessMsg, setMfaSuccessMsg] = useState<string | null>(null);
+    const [mfaErrorMsg, setMfaErrorMsg] = useState<string | null>(null);
+
     // Cargar perfil al montar
     useEffect(() => {
         profileService.getProfile().then(data => {
@@ -46,8 +57,62 @@ export const ProfilePage = () => {
             setPhone(data.phone || '');
             setProfessionalLicense(data.professionalLicense || '');
             setAvatarUrl(data.avatarUrl || '');
+            setMfaEnabled(Boolean(data.mfaEnabled));
         }).catch(() => { });
     }, []);
+
+    const handleStartMfaSetup = async () => {
+        setMfaErrorMsg(null);
+        setMfaSuccessMsg(null);
+        setIsMfaLoading(true);
+        try {
+            const data = await profileService.setupMfa();
+            setQrCodeImage(data.qrCodeImage);
+            setMfaSecret(data.secret);
+            setVerificationCode('');
+        } catch (err: any) {
+            setMfaErrorMsg(err.response?.data?.message || 'No se pudo generar el código QR.');
+        } finally {
+            setIsMfaLoading(false);
+        }
+    };
+
+    const handleConfirmMfa = async (e: FormEvent) => {
+        e.preventDefault();
+        setMfaErrorMsg(null);
+        setMfaSuccessMsg(null);
+        setIsMfaLoading(true);
+        try {
+            const res = await profileService.verifyMfa(verificationCode);
+            setMfaEnabled(true);
+            setQrCodeImage(null);
+            setMfaSecret(null);
+            setVerificationCode('');
+            setMfaSuccessMsg(res.message);
+        } catch (err: any) {
+            setMfaErrorMsg(err.response?.data?.message || 'Código incorrecto. Verifica los 6 dígitos.');
+        } finally {
+            setIsMfaLoading(false);
+        }
+    };
+
+    const handleDisableMfa = async () => {
+        if (!window.confirm('¿Deseas desactivar la verificación en 2 pasos (2FA) de tu cuenta?')) return;
+        setMfaErrorMsg(null);
+        setMfaSuccessMsg(null);
+        setIsMfaLoading(true);
+        try {
+            const res = await profileService.disableMfa();
+            setMfaEnabled(false);
+            setQrCodeImage(null);
+            setMfaSecret(null);
+            setMfaSuccessMsg(res.message);
+        } catch (err: any) {
+            setMfaErrorMsg(err.response?.data?.message || 'No se pudo desactivar el 2FA.');
+        } finally {
+            setIsMfaLoading(false);
+        }
+    };
 
     // Conversión de fotografía a Base64
     const handleAvatarFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +360,7 @@ export const ProfilePage = () => {
                             ¿Cómo crear una contraseña segura?
                         </div>
                         <p className="text-xs text-slate-700 leading-relaxed">
-                            💡 <strong>Tip pro:</strong> En lugar de una palabra simple, usa una <em>frase memorable</em> combinando palabras, números y símbolos (ejemplo: <span className="font-mono font-bold bg-white text-teal-800 dark:bg-slate-800 dark:text-teal-300 px-2 py-0.5 rounded-md border border-teal-200 dark:border-slate-700 shadow-2xs">Fisio.Fuerte#2026</span>).
+                            💡 <strong>Tip pro:</strong> En lugar de una palabra simple, usa una <em>frase memorable</em> combinando palabras, números y símbolos (ejemplo: <span className="font-mono font-bold bg-white text-teal-800 px-2 py-0.5 rounded-md border border-teal-200 shadow-2xs">Fisio.Fuerte#2026</span>).
                         </p>
                     </div>
 
@@ -370,6 +435,149 @@ export const ProfilePage = () => {
                     </form>
                 </div>
             </div>
+
+            {/* Tarjeta 3: Verificación en Dos Pasos (2FA - Google / Apple Authenticator) para Fisios y Admin */}
+            {isHealthStaff && (
+                <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div className="flex items-start gap-3">
+                            <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl border border-teal-100 shrink-0">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-lg font-bold text-slate-900">
+                                        Autenticación en Dos Pasos (2FA)
+                                    </h2>
+                                    {mfaEnabled ? (
+                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            ✓ Activo y Protegido
+                                        </span>
+                                    ) : (
+                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                            Opcional / Inactivo
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    Protege los expedientes clínicos vinculando tu cuenta con <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong> o la app <strong>Contraseñas de Apple (iOS / macOS)</strong>.
+                                </p>
+                            </div>
+                        </div>
+
+                        {mfaEnabled ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-rose-600 border-rose-200 hover:bg-rose-50 shrink-0"
+                                onClick={handleDisableMfa}
+                                isLoading={isMfaLoading}
+                            >
+                                Desactivar 2FA
+                            </Button>
+                        ) : !qrCodeImage ? (
+                            <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                className="shrink-0"
+                                onClick={handleStartMfaSetup}
+                                isLoading={isMfaLoading}
+                                leftIcon={<Smartphone className="w-4 h-4" />}
+                            >
+                                Configurar 2FA (Código QR)
+                            </Button>
+                        ) : null}
+                    </div>
+
+                    {mfaSuccessMsg && (
+                        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-sm text-emerald-800">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <span>{mfaSuccessMsg}</span>
+                        </div>
+                    )}
+
+                    {mfaErrorMsg && (
+                        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2.5 text-sm text-rose-800">
+                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                            <span>{mfaErrorMsg}</span>
+                        </div>
+                    )}
+
+                    {/* Asistente paso a paso cuando se genera el Código QR */}
+                    {qrCodeImage && !mfaEnabled && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <div className="flex flex-col items-center text-center space-y-3">
+                                <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs">
+                                    <img
+                                        src={qrCodeImage}
+                                        alt="Código QR 2FA"
+                                        className="w-44 h-44 object-contain"
+                                    />
+                                </div>
+                                {mfaSecret && (
+                                    <div className="text-xs text-slate-600">
+                                        <span className="block font-semibold text-slate-700">¿No puedes escanear el QR? Clave manual:</span>
+                                        <code className="inline-block mt-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-mono font-bold text-teal-700 select-all">
+                                            {mfaSecret}
+                                        </code>
+                                    </div>
+                                )}
+                            </div>
+
+                            <form onSubmit={handleConfirmMfa} className="space-y-4">
+                                <div className="space-y-1">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700">
+                                        Paso Final de Confirmación
+                                    </span>
+                                    <h3 className="text-base font-bold text-slate-900">
+                                        Verifica tu dispositivo
+                                    </h3>
+                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                        1. Abre la cámara de tu iPhone (Contraseñas de Apple) o la app Google Authenticator.<br />
+                                        2. Escanea el código QR de la izquierda.<br />
+                                        3. Escribe abajo el código de 6 dígitos que aparece en tu teléfono para activar la protección:
+                                    </p>
+                                </div>
+
+                                <Input
+                                    label="Código de Verificación (6 dígitos)"
+                                    required
+                                    maxLength={6}
+                                    placeholder="Ej. 123456"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                                />
+
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        size="sm"
+                                        isLoading={isMfaLoading}
+                                        disabled={verificationCode.length !== 6}
+                                    >
+                                        Confirmar y Activar 2FA
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setQrCodeImage(null);
+                                            setMfaSecret(null);
+                                            setMfaErrorMsg(null);
+                                        }}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

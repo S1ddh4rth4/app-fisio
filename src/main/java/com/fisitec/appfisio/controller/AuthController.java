@@ -29,7 +29,6 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final UserService userService;
-    private final com.fisitec.appfisio.service.MfaService mfaService;
 
     /**
      * Registra un nuevo usuario en la plataforma con rol por defecto de Paciente.
@@ -78,23 +77,5 @@ public class AuthController {
             }
             throw e;
         }
-    }
-
-    // Endpoint temporal para activar el 2FA al fisio
-    @GetMapping("/setup-mfa/{username}")
-    public ResponseEntity<String> setupMfa(@PathVariable String username) {
-        User user = userService.findByUsername(username).orElseThrow();
-
-        String secret = mfaService.generateSecret();
-
-        // 1. Asignamos los valores limpiamente usando los Setters nativos
-        user.setMfaSecret(secret);
-        user.setMfaEnabled(true);
-
-        // 2. Guardamos pasando por el Servicio oficial
-        userService.updateUser(user);
-
-        // 3. Devolvemos la URI pura
-        return ResponseEntity.ok(mfaService.getQrCodeUri(secret, username));
     }
 }
