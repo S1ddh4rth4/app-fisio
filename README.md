@@ -1,10 +1,10 @@
-# 🏥 FisioApp (Fisio-Tec) — Plataforma Clínica Full-Stack Multi-Tenant
+# FisioApp (Fisio-Tec) — Plataforma Clínica Full-Stack Multi-Tenant
 
 Sistema integral de gestión clínica, biomecánica y administrativa para clínicas de **Fisioterapia y Rehabilitación**, construido bajo arquitectura limpia por capas con **Java 17, Spring Boot 3.2.4, Oracle Database 21c XE, Flyway, React 18, TypeScript, Tailwind CSS y Docker**.
 
 ---
 
-## 📋 Descripción General
+## Descripción General
 
 **FisioApp** evolucionó de un módulo base de autenticación a una solución **HealthTech SaaS Multi-Tenant** completa que resuelve la operación diaria de una clínica de rehabilitación respetando estándares de privacidad y normativas médicas (como la **NOM-004-SSA3 del Expediente Clínico**):
 
@@ -19,7 +19,7 @@ Sistema integral de gestión clínica, biomecánica y administrativa para clíni
 
 ---
 
-## 🗂️ Estructura del Proyecto (Full-Stack)
+## Estructura del Proyecto (Full-Stack)
 
 ```text
 app-fisio/
@@ -64,7 +64,7 @@ app-fisio/
 
 ---
 
-## 🏗️ Diagramas de Arquitectura
+## Diagramas de Arquitectura
 
 ### 1. Arquitectura Full-Stack y Contenedores
 
@@ -176,7 +176,7 @@ erDiagram
 
 ---
 
-## 🔌 Principales Endpoints de la API
+## Principales Endpoints de la API
 
 | Módulo           | Método     | Ruta                                      | Descripción                                                                      | Roles Permitidos             |
 | ---------------- | ---------- | ----------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------- |
@@ -226,7 +226,7 @@ Durante el desarrollo y las rondas de auditoría arquitectónica, se identificar
 
 ---
 
-## 🚀 Cómo Ejecutar el Proyecto
+## Cómo Ejecutar el Proyecto
 
 ### Opción 1: Entorno Completo con Docker Compose (Recomendado — Con Oracle 21c XE)
 
@@ -257,7 +257,7 @@ Durante el desarrollo y las rondas de auditoría arquitectónica, se identificar
 
 ---
 
-## 🔐 Credenciales Iniciales de Prueba (Semilla `DataInitializer`)
+## Credenciales Iniciales de Prueba (Semilla `DataInitializer`)
 
 Al iniciar la aplicación, se crean automáticamente las siguientes cuentas de prueba si no existen:
 
