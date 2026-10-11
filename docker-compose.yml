@@ -4,11 +4,11 @@ services:
     container_name: appfisio-oracle
     restart: always
     environment:
-      - ORACLE_PASSWORD=oracle
-      - APP_USER=appfisio
-      - APP_USER_PASSWORD=appfisio
+      - ORACLE_PASSWORD=${ORACLE_SYSTEM_PASSWORD:-oracle}
+      - APP_USER=${ORACLE_APP_USER:-appfisio}
+      - APP_USER_PASSWORD=${ORACLE_APP_PASSWORD:-appfisio}
     ports:
-      - "1521:1521"
+      - "127.0.0.1:1521:1521"
     volumes:
       - oracle_data:/opt/oracle/oradata
     healthcheck:
@@ -30,11 +30,13 @@ services:
       TZ: America/Mexico_City
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracledb:1521/XEPDB1
-      SPRING_DATASOURCE_USERNAME: appfisio
-      SPRING_DATASOURCE_PASSWORD: appfisio
+      SPRING_DATASOURCE_USERNAME: ${ORACLE_APP_USER:-appfisio}
+      SPRING_DATASOURCE_PASSWORD: ${ORACLE_APP_PASSWORD:-appfisio}
       JWT_SECRET: ${JWT_SECRET:-super_secreta_clave_de_32_caracteres_minimo}
+      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET:-ClaveSecretaSuperSeguraDe32Bytes}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
