@@ -25,6 +25,7 @@ public class PatientService {
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserService userService;
+    private final EmailService emailService;
 
     /**
      * Obtiene el listado de pacientes con aislamiento estricto por rol:
@@ -72,9 +73,19 @@ public class PatientService {
             throw new IllegalArgumentException("Ya existe un paciente registrado con el correo: " + request.getEmail());
         }
 
-        // Buscar al fisio que está registrando al paciente
-        User physio = userRepository.findByUsername(currentUsername)
-                .orElseThrow(() -> new IllegalArgumentException("Fisioterapeuta no encontrado"));
+        // Buscar al usuario que está registrando al paciente
+        User creator = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario creador no encontrado"));
+
+        boolean isCreatorFisio = creator.getRoles() != null && creator.getRoles().stream()
+                .anyMatch(r -> "ROLE_FISIOTERAPEUTA".equals(r.getName()));
+
+        User assignedPhysio = creator;
+        if (!isCreatorFisio && request.getAssignedPhysioUsername() != null
+                && !request.getAssignedPhysioUsername().isBlank()) {
+            assignedPhysio = userRepository.findByUsername(request.getAssignedPhysioUsername().trim())
+                    .orElse(creator);
+        }
 
         String generatedUsername = userService.generateUniqueUsername(request.getFullName());
         // Generamos una clave segura aleatoria tipo "App-9a8b2"
@@ -85,9 +96,9 @@ public class PatientService {
         User newPatient = userService.createUser(generatedUsername, request.getEmail(), initialPassword,
                 "ROLE_PACIENTE");
 
-        // Guardar nombre completo del paciente y asignarlo a la cartera de este Fisio
+        // Guardar nombre completo del paciente y asignarlo a la cartera de su Fisio
         newPatient.setFullName(request.getFullName());
-        newPatient.setPrimaryPhysio(physio);
+        newPatient.setPrimaryPhysio(assignedPhysio);
 
         // Obligar a cambiar la contraseña temporal al ingresar
         newPatient.setMustChangePassword(true);
@@ -99,16 +110,27 @@ public class PatientService {
 
         userRepository.save(newPatient);
 
-        log.info("Alta rápida de paciente {} por fisio {}", request.getEmail(), physio.getUsername());
+        // Enviar correo de bienvenida asíncrono con usuario y clave temporal
+        emailService.sendWelcomeCredentials(
+                newPatient.getEmail(),
+                newPatient.getFullName(),
+                newPatient.getUsername(),
+                initialPassword,
+                "ROLE_PACIENTE");
+
+        log.info("Alta rápida de paciente {} asignado a {}", request.getEmail(), assignedPhysio.getUsername());
 
         // Devolver la respuesta con la contraseña en texto plano para copiar al
         // WhatsApp
         return com.fisitec.appfisio.dto.PatientRegistrationResponseDTO.builder()
                 .id(newPatient.getId())
                 .username(newPatient.getUsername())
+                .fullName(newPatient.getFullName())
                 .email(newPatient.getEmail())
                 .temporaryPassword(initialPassword)
-                .primaryPhysioName(physio.getUsername())
+                .primaryPhysioName(assignedPhysio.getFullName() != null && !assignedPhysio.getFullName().isBlank()
+                        ? assignedPhysio.getFullName()
+                        : assignedPhysio.getUsername())
                 .build();
     }
 }

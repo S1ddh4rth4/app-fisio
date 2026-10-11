@@ -12,7 +12,8 @@ import lombok.Data;
 public class PatientRegistrationResponseDTO {
     private String id;
     private String username;
+    private String fullName;
     private String email;
-    private String temporaryPassword; // <-- Aquí va la clave "Fisio-XXXX"
+    private String temporaryPassword; // <-- Aquí va la clave "App-XXXX"
     private String primaryPhysioName;
 }

@@ -21,17 +21,20 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final com.fisitec.appfisio.repository.AppointmentRepository appointmentRepository;
     private final AuditService auditService;
     private final MfaService mfaService;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
             RoleRepository roleRepository,
+            com.fisitec.appfisio.repository.AppointmentRepository appointmentRepository,
             AuditService auditService,
             MfaService mfaService,
             @Lazy BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.appointmentRepository = appointmentRepository;
         this.auditService = auditService;
         this.mfaService = mfaService;
         this.passwordEncoder = passwordEncoder;
@@ -359,5 +362,55 @@ public class UserService {
      */
     public java.util.List<User> findByRole(String roleName) {
         return userRepository.findByRoles_Name(roleName);
+    }
+
+    /**
+     * Devuelve los fisioterapeutas visibles para el usuario actual:
+     * - Si es PACIENTE: solo ve al fisioterapeuta que lo dio de alta
+     * (primaryPhysio)
+     * y/o a los fisioterapeutas con quienes ya tiene citas agendadas.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public java.util.List<UserDTO> getProfessionalsForUser(String username, boolean isPatient) {
+        if (!isPatient) {
+            return findByRole("ROLE_FISIOTERAPEUTA").stream()
+                    .map(this::convertToDTO)
+                    .toList();
+        }
+
+        User patient = userRepository.findByUsername(username).orElse(null);
+        if (patient == null) {
+            return java.util.List.of();
+        }
+
+        java.util.List<String> allowedPhysioIds = new java.util.ArrayList<>();
+
+        // 1. Fisioterapeuta que lo dio de alta (si tiene rol de fisioterapeuta)
+        User primary = patient.getPrimaryPhysio();
+        if (primary != null && primary.getRoles() != null) {
+            boolean isPrimaryAFisio = primary.getRoles().stream()
+                    .anyMatch(r -> "ROLE_FISIOTERAPEUTA".equals(r.getName()));
+            if (isPrimaryAFisio) {
+                allowedPhysioIds.add(primary.getId());
+            }
+        }
+
+        // 2. Fisioterapeutas con los que ya ha tenido citas
+        appointmentRepository.findDistinctProfessionalIdsByPatientId(patient.getId()).forEach(id -> {
+            if (!allowedPhysioIds.contains(id)) {
+                allowedPhysioIds.add(id);
+            }
+        });
+
+        // Devolver únicamente su(s) fisioterapeuta(s) asignado(s)
+        if (!allowedPhysioIds.isEmpty()) {
+            return userRepository.findAllById(allowedPhysioIds).stream()
+                    .map(this::convertToDTO)
+                    .toList();
+        }
+
+        return findByRole("ROLE_FISIOTERAPEUTA").stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 }

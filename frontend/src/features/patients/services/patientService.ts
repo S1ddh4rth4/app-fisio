@@ -8,8 +8,8 @@ export const patientService = {
         return response.data;
     },
 
-    // Registrar paciente rápido con Nombre y Correo
-    create: async (data: { fullName: string; email: string; acceptsPrivacyPolicy: boolean }): Promise<PatientDTO> => {
+    // Registrar paciente rápido con Nombre, Correo y Fisioterapeuta opcional (si lo crea Admin/Recepción)
+    create: async (data: { fullName: string; email: string; acceptsPrivacyPolicy: boolean; assignedPhysioUsername?: string }): Promise<PatientDTO> => {
         const response = await api.post<PatientDTO>('/v1/patients', data);
         return response.data;
     },

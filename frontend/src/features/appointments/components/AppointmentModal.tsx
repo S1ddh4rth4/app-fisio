@@ -83,14 +83,16 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
 
     useEffect(() => {
         if (isOpen) {
-            // 1. Descargar la lista de Doctores reales de la BD
+            // 1. Descargar la lista de Doctores reales de la BD (filtrada por cartera si es paciente)
             appointmentService.getProfessionals().then(data => {
                 setProfessionalsList(data);
-                // Si eres Fisio, te pones a ti mismo. Si eres paciente, dejamos la cajita vacía para que tú elijas.
+                // Si eres Fisio te pones a ti mismo; si eres paciente y solo tienes 1 fisio asignado, se autoselecciona
                 if (hasRole('ROLE_FISIOTERAPEUTA')) {
                     setProfessionalId(user?.username || '');
+                } else if (data.length === 1) {
+                    setProfessionalId(data[0].username);
                 } else if (data.length > 0 && !professionalId) {
-                    setProfessionalId(''); // Forzamos a que el usuario despliegue la lista y elija
+                    setProfessionalId('');
                 }
             }).catch(() => { });
 
@@ -230,7 +232,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                                             <option value="">-- Elige un paciente --</option>
                                             {patientsList.map((p) => (
                                                 <option key={p.id} value={p.username}>
-                                                    {p.username} ({p.email})
+                                                    {p.fullName ? `${p.fullName} — @${p.username} (${p.email})` : `${p.username} (${p.email})`}
                                                 </option>
                                             ))}
                                         </select>
@@ -266,13 +268,13 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                                     required
                                     value={professionalId}
                                     onChange={(e) => setProfessionalId(e.target.value)}
-                                    disabled={hasRole('ROLE_FISIOTERAPEUTA')} // Un doctor no puede agendar a nombre de otro colega
+                                    disabled={hasRole('ROLE_FISIOTERAPEUTA') || (isPatient && professionalsList.length === 1)}
                                     className="w-full h-12 bg-white text-slate-900 text-base rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 pl-11 pr-4 transition-all duration-200 cursor-pointer disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                                 >
                                     <option value="" disabled>-- Elige un Fisioterapeuta --</option>
                                     {professionalsList.map((doc) => (
                                         <option key={doc.id} value={doc.username}>
-                                            Dr/a. {doc.username}
+                                            Dr/a. {doc.fullName ? `${doc.fullName} (@${doc.username})` : doc.username}
                                         </option>
                                     ))}
                                 </select>

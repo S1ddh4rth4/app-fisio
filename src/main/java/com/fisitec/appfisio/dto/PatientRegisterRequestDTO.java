@@ -17,6 +17,10 @@ public class PatientRegisterRequestDTO {
     @Email(message = "El email debe ser válido")
     private String email;
 
+    // Opcional: usado cuando Admin o Recepción dan de alta al paciente y eligen su
+    // Fisio
+    private String assignedPhysioUsername;
+
     // --- Cumplimiento Legal ---
     @jakarta.validation.constraints.NotNull(message = "Debe aceptar el aviso de privacidad")
     @jakarta.validation.constraints.AssertTrue(message = "Debe aceptar el aviso de privacidad")

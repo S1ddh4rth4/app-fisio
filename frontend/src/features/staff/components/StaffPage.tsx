@@ -45,6 +45,7 @@ export const StaffPage = () => {
 
     const filteredStaff = staff.filter(
         (s) =>
+            (s.fullName && s.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
             s.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
             s.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -164,8 +165,9 @@ export const StaffPage = () => {
 
                                 <div>
                                     <h3 className="font-bold text-slate-900 text-base">
-                                        {member.username}
+                                        {member.fullName || member.username}
                                     </h3>
+                                    <p className="text-xs text-slate-400 font-mono">@{member.username}</p>
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
                                         <Mail className="w-3.5 h-3.5" />
                                         <span>{member.email}</span>

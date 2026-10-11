@@ -220,9 +220,12 @@ Durante el desarrollo y las rondas de auditoría arquitectónica, se identificar
 5. **Inmutabilidad Clínica (NOM-004), Autoría y Lienzos de Firma Independientes:**
    - _Problema detectado:_ Si un administrador editaba una historia clínica, su usuario podía sobrescribir al fisioterapeuta autor original; además, en el visor de 7 hojas, limpiar el canvas de firma del fisioterapeuta reiniciaba en el estado la firma del paciente.
    - _Solución:_ Se restringió la asignación del autor únicamente al bloque de creación en `ClinicalHistoryService`, y se parametrizó `clearSignature(canvas, 'patient' | 'physio')` en `ClinicalHistoryViewer.tsx` para mantener ambos lienzos de firma completamente aislados.
-6. **Entrega de Credenciales Temporales en Alta Rápida de Pacientes:**
-   - _Problema detectado:_ El backend generaba una contraseña temporal (`App-xxxxx`) con `mustChangePassword = true`, pero el modal del frontend no la mostraba en pantalla ni persistía el nombre completo (`fullName`) en la entidad `User`.
-   - _Solución:_ Se actualizó `PatientService` para persistir `fullName` y `PatientModal.tsx` para desplegar las credenciales iniciales listas para compartir con el paciente.
+6. **Notificaciones Transaccionales por Correo (`EmailService` Asíncrono) y Alta Rápida:**
+   - _Problema detectado:_ Al registrar pacientes o personal clínico con contraseña temporal (`mustChangePassword = true`), la entrega de accesos dependía exclusivamente de copiarlos manualmente.
+   - _Solución:_ Se implementó `EmailService` con `@Async` y `JavaMailSender` (SMTP TLS) que envía automáticamente una plantilla HTML clínica de bienvenida con usuario, correo y contraseña temporal tanto en alta de pacientes como de personal, conservando en la UI el botón de respaldo para copiar credenciales por WhatsApp en un clic.
+7. **Identificación Clínica Anti-Homónimos, Aislamiento Bidireccional de Cartera y UX Interactiva:**
+   - _Problema detectado:_ Mostrar únicamente el `username` dificultaba identificar pacientes en la operación diaria, o bien mostrar solo el nombre podía causar confusión entre pacientes homónimos; además, el selector de fisioterapeutas al agendar cita no filtraba la cartera desde la perspectiva del paciente.
+   - _Solución:_ Se estandarizó en toda la plataforma la visualización combinada `Nombre Completo (@username)` (y `Nombre — @username (correo)` en selectores), se blindó `GET /api/v1/users/professionals` y `AppointmentService` para que cada paciente solo vea y agende con su fisioterapeuta asignado (`primaryPhysio`), y se incorporó una Landing Page informativa con física de resortes (Ley de Hooke a 60fps) manteniendo estático el formulario de acceso para adultos mayores.
 
 ---
 

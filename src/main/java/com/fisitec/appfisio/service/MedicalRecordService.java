@@ -79,12 +79,23 @@ public class MedicalRecordService {
 
         // Método auxiliar para mapear Entidad -> ResponseDTO
         private MedicalRecordResponseDTO mapToDTO(MedicalRecord record) {
+                String patientDisplay = (record.getPatient().getFullName() != null
+                                && !record.getPatient().getFullName().isBlank())
+                                                ? record.getPatient().getFullName() + " (@"
+                                                                + record.getPatient().getUsername() + ")"
+                                                : record.getPatient().getUsername();
+                String physioDisplay = (record.getPhysiotherapist().getFullName() != null
+                                && !record.getPhysiotherapist().getFullName().isBlank())
+                                                ? record.getPhysiotherapist().getFullName() + " (@"
+                                                                + record.getPhysiotherapist().getUsername() + ")"
+                                                : record.getPhysiotherapist().getUsername();
+
                 return MedicalRecordResponseDTO.builder()
                                 .id(record.getId())
                                 .patientId(record.getPatient().getId())
-                                .patientName(record.getPatient().getUsername())
+                                .patientName(patientDisplay)
                                 .physiotherapistId(record.getPhysiotherapist().getId())
-                                .physiotherapistName(record.getPhysiotherapist().getUsername())
+                                .physiotherapistName(physioDisplay)
                                 .appointmentId(record.getAppointment() != null ? record.getAppointment().getId() : null)
                                 .diagnosis(record.getDiagnosis())
                                 .notes(record.getNotes())

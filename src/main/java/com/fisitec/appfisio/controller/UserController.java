@@ -43,15 +43,16 @@ public class UserController {
     }
 
     /**
-     * Lista a todos los profesionales con rol de fisioterapeuta para asignación de
-     * citas y expedientes.
+     * Lista a los profesionales con rol de fisioterapeuta aplicando aislamiento
+     * de cartera cuando quien consulta es un paciente.
      */
     @GetMapping("/professionals")
-    public ResponseEntity<java.util.List<UserDTO>> getProfessionals() {
+    public ResponseEntity<java.util.List<UserDTO>> getProfessionals(Authentication authentication) {
+        boolean isPatient = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PACIENTE"));
+
         return ResponseEntity.ok(
-                userService.findByRole("ROLE_FISIOTERAPEUTA").stream()
-                        .map(userService::convertToDTO)
-                        .toList());
+                userService.getProfessionalsForUser(authentication.getName(), isPatient));
     }
 
     /**

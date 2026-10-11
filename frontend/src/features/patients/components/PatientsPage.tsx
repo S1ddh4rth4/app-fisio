@@ -52,6 +52,7 @@ export const PatientsPage = () => {
 
     const filteredPatients = patients.filter(
         (p) =>
+            (p.fullName && p.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
             p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -159,16 +160,19 @@ export const PatientsPage = () => {
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-base border border-teal-100">
-                                            {patient.username.substring(0, 2).toUpperCase()}
+                                            {(patient.fullName || patient.username).substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-900 text-base">{patient.username}</h3>
+                                            <h3 className="font-bold text-slate-900 text-base">
+                                                {patient.fullName || patient.username}
+                                            </h3>
+                                            <p className="text-xs text-slate-400 font-mono">@{patient.username}</p>
                                             {patient.enabled ? (
-                                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-0.5">
+                                                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1">
                                                     <ShieldCheck className="w-3 h-3" /> Activo
                                                 </span>
                                             ) : (
-                                                <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-0.5">
+                                                <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1">
                                                     <AlertCircle className="w-3 h-3" /> Inactivo
                                                 </span>
                                             )}

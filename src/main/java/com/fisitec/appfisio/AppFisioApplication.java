@@ -3,6 +3,7 @@ package com.fisitec.appfisio;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Main entry point of the AppFisio Spring Boot application.
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 @SpringBootApplication
 @EnableJpaAuditing(auditorAwareRef = "auditorAwareImpl")
+@EnableAsync
 public class AppFisioApplication {
     public static void main(String[] args) {
         SpringApplication.run(AppFisioApplication.class, args);

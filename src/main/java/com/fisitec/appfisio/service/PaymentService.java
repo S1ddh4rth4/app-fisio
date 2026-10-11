@@ -128,13 +128,21 @@ public class PaymentService {
                 .build();
     }
 
+    private String formatDisplayName(User user) {
+        if (user == null)
+            return "";
+        return (user.getFullName() != null && !user.getFullName().isBlank())
+                ? user.getFullName() + " (@" + user.getUsername() + ")"
+                : user.getUsername();
+    }
+
     private AppointmentResponseDTO mapToAppointmentDTO(Appointment a) {
         return AppointmentResponseDTO.builder()
                 .id(a.getId())
                 .patientId(a.getPatient().getId())
-                .patientName(a.getPatient().getUsername())
+                .patientName(formatDisplayName(a.getPatient()))
                 .professionalId(a.getProfessional().getId())
-                .professionalName(a.getProfessional().getUsername())
+                .professionalName(formatDisplayName(a.getProfessional()))
                 .appointmentDate(a.getAppointmentDate())
                 .reason(a.getReason())
                 .status(a.getStatus())

@@ -153,7 +153,9 @@ export const RecordsPage = () => {
                             >
                                 <option value="" disabled>-- Selecciona un Paciente de tu lista --</option>
                                 {patientsList.map(p => (
-                                    <option key={p.id} value={p.username}>{p.username} ({p.email})</option>
+                                    <option key={p.id} value={p.username}>
+                                        {p.fullName ? `${p.fullName} — @${p.username} (${p.email})` : `${p.username} (${p.email})`}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -299,7 +301,13 @@ export const RecordsPage = () => {
                         <div className="flex items-center justify-between px-1">
                             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <User className="w-5 h-5 text-teal-600" />
-                                Historial de Notas: <span className="text-teal-700 font-mono">{searchedPatient}</span>
+                                Historial de Notas:{' '}
+                                <span className="text-teal-700">
+                                    {patientsList.find(p => p.username === searchedPatient)?.fullName || searchedPatient}
+                                </span>
+                                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                    @{searchedPatient}
+                                </span>
                             </h2>
                             <span className="text-xs font-semibold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200">
                                 {records.length} notas registradas
@@ -362,7 +370,11 @@ export const RecordsPage = () => {
             {isHistoryOpen && (
                 <ClinicalHistoryViewer
                     patientId={searchedPatient || patientIdInput}
-                    patientUsername={searchedPatient || patientIdInput}
+                    patientUsername={
+                        patientsList.find(p => p.username === (searchedPatient || patientIdInput))?.fullName
+                            ? `${patientsList.find(p => p.username === (searchedPatient || patientIdInput))?.fullName} (@${searchedPatient || patientIdInput})`
+                            : (searchedPatient || patientIdInput)
+                    }
                     initialHistory={selectedHistory || undefined}
                     onSaved={() => handleSearch(searchedPatient || patientIdInput)}
                     onClose={() => {

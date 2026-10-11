@@ -54,7 +54,8 @@ public class AdminUserController {
                 request.getUsername(),
                 request.getEmail(),
                 request.getPassword(),
-                request.getRole());
+                request.getRole(),
+                request.getFullName());
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.convertToDTO(user));
     }
 }

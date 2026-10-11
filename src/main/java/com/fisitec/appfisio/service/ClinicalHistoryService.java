@@ -103,12 +103,23 @@ public class ClinicalHistoryService {
         }
 
         private ClinicalHistoryResponseDTO mapToDTO(ClinicalHistory h) {
+                String patientDisplay = (h.getPatient().getFullName() != null
+                                && !h.getPatient().getFullName().isBlank())
+                                                ? h.getPatient().getFullName() + " (@" + h.getPatient().getUsername()
+                                                                + ")"
+                                                : h.getPatient().getUsername();
+                String physioDisplay = (h.getPhysiotherapist().getFullName() != null
+                                && !h.getPhysiotherapist().getFullName().isBlank())
+                                                ? h.getPhysiotherapist().getFullName() + " (@"
+                                                                + h.getPhysiotherapist().getUsername() + ")"
+                                                : h.getPhysiotherapist().getUsername();
+
                 return ClinicalHistoryResponseDTO.builder()
                                 .id(h.getId())
                                 .patientId(h.getPatient().getId())
-                                .patientName(h.getPatient().getUsername())
+                                .patientName(patientDisplay)
                                 .physiotherapistId(h.getPhysiotherapist().getId())
-                                .physiotherapistName(h.getPhysiotherapist().getUsername())
+                                .physiotherapistName(physioDisplay)
                                 .recordNumber(h.getRecordNumber())
                                 .evaluationType(h.getEvaluationType())
                                 .mainDiagnosis(h.getMainDiagnosis())

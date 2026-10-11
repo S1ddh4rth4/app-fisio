@@ -135,12 +135,23 @@ public class ExercisePrescriptionService {
                                                 .build())
                                 .collect(Collectors.toList());
 
+                String patientDisplay = (p.getPatient().getFullName() != null
+                                && !p.getPatient().getFullName().isBlank())
+                                                ? p.getPatient().getFullName() + " (@" + p.getPatient().getUsername()
+                                                                + ")"
+                                                : p.getPatient().getUsername();
+                String physioDisplay = (p.getPhysiotherapist().getFullName() != null
+                                && !p.getPhysiotherapist().getFullName().isBlank())
+                                                ? p.getPhysiotherapist().getFullName() + " (@"
+                                                                + p.getPhysiotherapist().getUsername() + ")"
+                                                : p.getPhysiotherapist().getUsername();
+
                 return PrescriptionResponseDTO.builder()
                                 .id(p.getId())
                                 .patientId(p.getPatient().getId())
-                                .patientName(p.getPatient().getUsername())
+                                .patientName(patientDisplay)
                                 .physiotherapistId(p.getPhysiotherapist().getId())
-                                .physiotherapistName(p.getPhysiotherapist().getUsername())
+                                .physiotherapistName(physioDisplay)
                                 .title(p.getTitle())
                                 .generalInstructions(p.getGeneralInstructions())
                                 .startDate(p.getStartDate())

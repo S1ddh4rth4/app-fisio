@@ -122,7 +122,16 @@ public class AppointmentService {
 
                 if (isPatient) {
                         patient = currentUser; // Seguridad: un paciente solo puede agendarse a sí mismo
-                        professional = findUserByIdOrUsername(requestDTO.getProfessionalId());
+                        User assignedPhysio = patient.getPrimaryPhysio();
+                        if (assignedPhysio != null && assignedPhysio.getRoles() != null
+                                        && assignedPhysio.getRoles().stream()
+                                                        .anyMatch(r -> "ROLE_FISIOTERAPEUTA".equals(r.getName()))) {
+                                professional = assignedPhysio;
+                        } else {
+                                professional = findUserByIdOrUsername(requestDTO.getProfessionalId());
+                                patient.setPrimaryPhysio(professional);
+                                userRepository.save(patient);
+                        }
                 } else {
                         patient = findUserByIdOrUsername(requestDTO.getPatientId());
                         if (isFisio) {
@@ -130,6 +139,13 @@ public class AppointmentService {
                         } else {
                                 // Admin / Recepción pueden elegir al fisio libremente
                                 professional = findUserByIdOrUsername(requestDTO.getProfessionalId());
+                        }
+                        User assignedPhysio = patient.getPrimaryPhysio();
+                        if (assignedPhysio == null || assignedPhysio.getRoles() == null
+                                        || assignedPhysio.getRoles().stream()
+                                                        .noneMatch(r -> "ROLE_FISIOTERAPEUTA".equals(r.getName()))) {
+                                patient.setPrimaryPhysio(professional);
+                                userRepository.save(patient);
                         }
                 }
 
@@ -223,13 +239,21 @@ public class AppointmentService {
                 return mapToDTO(appointmentRepository.save(appt));
         }
 
+        private String formatDisplayName(User user) {
+                if (user == null)
+                        return "";
+                return (user.getFullName() != null && !user.getFullName().isBlank())
+                                ? user.getFullName() + " (@" + user.getUsername() + ")"
+                                : user.getUsername();
+        }
+
         private AppointmentResponseDTO mapToDTO(Appointment appointment) {
                 return AppointmentResponseDTO.builder()
                                 .id(appointment.getId())
                                 .patientId(appointment.getPatient().getId())
-                                .patientName(appointment.getPatient().getUsername())
+                                .patientName(formatDisplayName(appointment.getPatient()))
                                 .professionalId(appointment.getProfessional().getId())
-                                .professionalName(appointment.getProfessional().getUsername())
+                                .professionalName(formatDisplayName(appointment.getProfessional()))
                                 .appointmentDate(appointment.getAppointmentDate())
                                 .reason(appointment.getReason())
                                 .status(appointment.getStatus() != null ? appointment.getStatus() : "SCHEDULED")

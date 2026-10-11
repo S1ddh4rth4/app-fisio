@@ -43,9 +43,16 @@ public class DashboardService {
                     .map(a -> AppointmentResponseDTO.builder()
                             .id(a.getId())
                             .patientId(a.getPatient().getId())
-                            .patientName(a.getPatient().getUsername())
+                            .patientName(
+                                    (a.getPatient().getFullName() != null && !a.getPatient().getFullName().isBlank())
+                                            ? a.getPatient().getFullName() + " (@" + a.getPatient().getUsername() + ")"
+                                            : a.getPatient().getUsername())
                             .professionalId(a.getProfessional().getId())
-                            .professionalName(a.getProfessional().getUsername())
+                            .professionalName((a.getProfessional().getFullName() != null
+                                    && !a.getProfessional().getFullName().isBlank())
+                                            ? a.getProfessional().getFullName() + " (@"
+                                                    + a.getProfessional().getUsername() + ")"
+                                            : a.getProfessional().getUsername())
                             .appointmentDate(a.getAppointmentDate())
                             .reason(a.getReason())
                             .status(a.getStatus())

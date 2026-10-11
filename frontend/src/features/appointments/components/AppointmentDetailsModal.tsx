@@ -57,7 +57,7 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
             }).catch(() => { });
 
             // 2. Cargar únicamente los paquetes del paciente de esta cita
-            const targetPatient = appointment.patientName || appointment.patientId;
+            const targetPatient = appointment.patientId || appointment.patientName;
             if (targetPatient) {
                 paymentService.getPatientPackages(targetPatient).then(pkgs => {
                     // Filtrar estrictamente que el paquete pertenezca a este paciente exacto
@@ -67,8 +67,8 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                     const actives = pkgs.filter(p => {
                         const pkgPatientName = (p.patientUsername || '').toLowerCase().trim();
                         const pkgPatientId = (p.patientId || '').toLowerCase().trim();
-                        const isSamePatient = (pkgPatientName && pkgPatientName === currentPatientName) ||
-                            (pkgPatientId && (pkgPatientId === currentPatientId || pkgPatientId === currentPatientName));
+                        const isSamePatient = (pkgPatientId && pkgPatientId === currentPatientId) ||
+                            (pkgPatientName && pkgPatientName === currentPatientName);
                         return p.status === 'ACTIVO' && p.remainingSessions > 0 && isSamePatient;
                     });
                     setPatientPackages(actives);
@@ -528,7 +528,7 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
             {/* Modal Visor/Editor de Historia Clínica desde la Cita */}
             {isHistoryOpen && appointment && (
                 <ClinicalHistoryViewer
-                    patientId={appointment.patientName || appointment.patientId}
+                    patientId={appointment.patientId || appointment.patientName}
                     patientUsername={appointment.patientName || appointment.patientId}
                     onClose={() => setIsHistoryOpen(false)}
                 />

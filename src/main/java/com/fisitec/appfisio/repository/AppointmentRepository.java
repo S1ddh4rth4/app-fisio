@@ -38,4 +38,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
         @Query("SELECT DISTINCT a.patient.id FROM Appointment a WHERE a.professional.id = :professionalId")
         List<String> findDistinctPatientIdsByProfessionalId(@Param("professionalId") String professionalId);
+
+        @Query("SELECT DISTINCT a.professional.id FROM Appointment a WHERE a.patient.id = :patientId")
+        List<String> findDistinctProfessionalIdsByPatientId(@Param("patientId") String patientId);
 }

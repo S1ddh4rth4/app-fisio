@@ -23,6 +23,7 @@ export interface UserSession {
 export interface StaffUserDTO {
     id: string;
     username: string;
+    fullName?: string;
     email: string;
     roles: string[];
     enabled: boolean;
@@ -30,6 +31,7 @@ export interface StaffUserDTO {
 }
 
 export interface AdminUserRequestDTO {
+    fullName?: string;
     username: string;
     email: string;
     password: string;

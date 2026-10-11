@@ -22,6 +22,7 @@ public class AuthService {
     private final UserService userService;
     private final JwtService jwtService;
     private final MfaService mfaService;
+    private final EmailService emailService;
 
     /**
      * Registra un nuevo usuario validando que no existan duplicados.
@@ -34,6 +35,10 @@ public class AuthService {
      * @return Entidad del usuario persistida.
      */
     public User register(String username, String email, String password, String role) {
+        return register(username, email, password, role, null);
+    }
+
+    public User register(String username, String email, String password, String role, String fullName) {
         // Validación de unicidad de usuario y correo
         if (userService.existsByUsername(username)) {
             throw new RuntimeException("El nombre de usuario ya está en uso: " + username);
@@ -43,7 +48,21 @@ public class AuthService {
         }
 
         // Creación y persistencia segura del usuario
-        return userService.createUser(username, email, password, role);
+        User createdUser = userService.createUser(username, email, password, role);
+        if (fullName != null && !fullName.isBlank()) {
+            createdUser.setFullName(fullName.trim());
+            userService.updateUser(createdUser);
+        }
+
+        // Envío asíncrono de credenciales por correo electrónico
+        emailService.sendWelcomeCredentials(
+                createdUser.getEmail(),
+                createdUser.getFullName() != null ? createdUser.getFullName() : createdUser.getUsername(),
+                createdUser.getUsername(),
+                password,
+                role);
+
+        return createdUser;
     }
 
     /**

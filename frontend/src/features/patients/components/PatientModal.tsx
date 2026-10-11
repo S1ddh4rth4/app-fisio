@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { patientService } from '../services/patientService';
+import { appointmentService } from '../../appointments/services/appointmentService';
 import type { PatientDTO } from '../../../types/patient';
-import { X, User, Mail, CheckCircle2, AlertCircle, Send } from 'lucide-react';
+import { X, User, Mail, Stethoscope, CheckCircle2, AlertCircle, Send, Copy, Check } from 'lucide-react';
 import { PrivacyPolicyModal } from './PrivacyPolicyModal';
 
 interface PatientModalProps {
@@ -13,14 +15,33 @@ interface PatientModalProps {
 }
 
 export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) => {
+    const { hasRole } = useAuth();
+    const isAdminOrReception = hasRole('ROLE_ADMIN') || hasRole('ROLE_RECEPCION');
+
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
+    const [assignedPhysioUsername, setAssignedPhysioUsername] = useState('');
+    const [professionalsList, setProfessionalsList] = useState<any[]>([]);
     const [acceptsPrivacyPolicy, setAcceptsPrivacyPolicy] = useState(false);
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const [createdPatient, setCreatedPatient] = useState<PatientDTO | null>(null);
+
+    useEffect(() => {
+        if (isOpen && isAdminOrReception) {
+            appointmentService.getProfessionals()
+                .then(data => {
+                    setProfessionalsList(data);
+                    if (data.length === 1) {
+                        setAssignedPhysioUsername(data[0].username);
+                    }
+                })
+                .catch(() => setProfessionalsList([]));
+        }
+    }, [isOpen, isAdminOrReception]);
 
     if (!isOpen) return null;
 
@@ -34,6 +55,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                 fullName,
                 email,
                 acceptsPrivacyPolicy,
+                assignedPhysioUsername: isAdminOrReception ? assignedPhysioUsername : undefined,
             });
             setCreatedPatient(created);
         } catch (err: any) {
@@ -45,6 +67,14 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
         }
     };
 
+    const handleCopyCredentials = () => {
+        if (!createdPatient) return;
+        const text = `Bienvenido a AppFisio\nUsuario: ${createdPatient.username}\nCorreo: ${createdPatient.email}\nContraseña temporal: ${createdPatient.temporaryPassword || ''}`;
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     const handleFinish = () => {
         if (createdPatient) {
             onSuccess(createdPatient);
@@ -54,6 +84,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
         setAcceptsPrivacyPolicy(false);
         setErrorMsg(null);
         setCreatedPatient(null);
+        setCopied(false);
         onClose();
     };
 
@@ -88,7 +119,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                                 ¡Paciente Registrado con Éxito!
                             </h3>
                             <p className="text-xs text-teal-800 font-medium leading-relaxed">
-                                Comparte estas credenciales iniciales con el paciente para su primer ingreso (el sistema le solicitará cambiar su contraseña al entrar):
+                                Hemos enviado un correo automático con sus accesos a <strong>{createdPatient.email}</strong>. También puedes copiarlos aquí para WhatsApp:
                             </p>
                             <div className="p-3 bg-white border border-teal-200 rounded-xl text-left text-xs space-y-1 font-mono text-slate-800">
                                 <p><strong>Usuario:</strong> {createdPatient.username}</p>
@@ -97,6 +128,14 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                                     <p><strong>Clave Temporal:</strong> <span className="text-teal-700 font-bold">{createdPatient.temporaryPassword}</span></p>
                                 )}
                             </div>
+                            <button
+                                type="button"
+                                onClick={handleCopyCredentials}
+                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-white hover:bg-teal-100/60 text-teal-800 border border-teal-300 text-xs font-bold transition cursor-pointer"
+                            >
+                                {copied ? <Check className="w-4 h-4 text-teal-600" /> : <Copy className="w-4 h-4 text-teal-600" />}
+                                {copied ? '¡Credenciales copiadas!' : 'Copiar credenciales para WhatsApp'}
+                            </button>
                         </div>
 
                         <Button
@@ -138,6 +177,32 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                             leftIcon={<Mail className="w-5 h-5 text-slate-400" />}
                             helperText="El paciente podrá ingresar al sistema con este correo"
                         />
+
+                        {isAdminOrReception && (
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
+                                    Fisioterapeuta de Cabecera Asignado <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <Stethoscope className="w-5 h-5" />
+                                    </div>
+                                    <select
+                                        required
+                                        value={assignedPhysioUsername}
+                                        onChange={(e) => setAssignedPhysioUsername(e.target.value)}
+                                        className="w-full h-11 pl-11 pr-4 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                    >
+                                        <option value="" disabled>-- Selecciona su Fisioterapeuta --</option>
+                                        {professionalsList.map((doc) => (
+                                            <option key={doc.id} value={doc.username}>
+                                                Dr/a. {doc.fullName ? `${doc.fullName} (@${doc.username})` : doc.username}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-2 text-xs text-slate-600">
                             <Send className="w-4 h-4 text-teal-600 shrink-0" />

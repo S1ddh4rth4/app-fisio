@@ -165,7 +165,7 @@ export const PrescriptionModal = ({
                                 <option value="" disabled>-- Selecciona un Paciente --</option>
                                 {patientsList.map((p) => (
                                     <option key={p.id} value={p.username}>
-                                        {p.username} ({p.email})
+                                        {p.fullName ? `${p.fullName} — @${p.username} (${p.email})` : `${p.username} (${p.email})`}
                                     </option>
                                 ))}
                             </select>
