@@ -85,7 +85,8 @@ public class PatientService {
         User newPatient = userService.createUser(generatedUsername, request.getEmail(), initialPassword,
                 "ROLE_PACIENTE");
 
-        // Asignar este paciente a la cartera de este Fisio
+        // Guardar nombre completo del paciente y asignarlo a la cartera de este Fisio
+        newPatient.setFullName(request.getFullName());
         newPatient.setPrimaryPhysio(physio);
 
         // Obligar a cambiar la contraseña temporal al ingresar

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
 
@@ -19,7 +20,7 @@ public class CryptoConverter implements AttributeConverter<String, String> {
 
     @Value("${app.security.encryption-secret}")
     public void setSecretKey(String secret) {
-        key = new SecretKeySpec(secret.getBytes(), AES);
+        key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), AES);
     }
 
     @Override
@@ -29,7 +30,7 @@ public class CryptoConverter implements AttributeConverter<String, String> {
         try {
             Cipher cipher = Cipher.getInstance(AES);
             cipher.init(Cipher.ENCRYPT_MODE, key);
-            return Base64.getEncoder().encodeToString(cipher.doFinal(attribute.getBytes()));
+            return Base64.getEncoder().encodeToString(cipher.doFinal(attribute.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             throw new RuntimeException("Error encriptando dato clínico", e);
         }
@@ -42,7 +43,7 @@ public class CryptoConverter implements AttributeConverter<String, String> {
         try {
             Cipher cipher = Cipher.getInstance(AES);
             cipher.init(Cipher.DECRYPT_MODE, key);
-            return new String(cipher.doFinal(Base64.getDecoder().decode(dbData)));
+            return new String(cipher.doFinal(Base64.getDecoder().decode(dbData)), StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new RuntimeException("Error desencriptando dato clínico", e);
         }

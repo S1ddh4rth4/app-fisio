@@ -51,6 +51,8 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
         }
         setFullName('');
         setEmail('');
+        setAcceptsPrivacyPolicy(false);
+        setErrorMsg(null);
         setCreatedPatient(null);
         onClose();
     };
@@ -78,7 +80,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                 {/* Si ya se creó, mostrar pantalla de confirmación */}
                 {createdPatient ? (
                     <div className="mt-6 space-y-4 animate-in fade-in">
-                        <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl text-center space-y-2">
+                        <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl text-center space-y-3">
                             <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-teal-600/20">
                                 <CheckCircle2 className="w-6 h-6" />
                             </div>
@@ -86,8 +88,15 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                                 ¡Paciente Registrado con Éxito!
                             </h3>
                             <p className="text-xs text-teal-800 font-medium leading-relaxed">
-                                Se ha generado el usuario <strong>{createdPatient.username}</strong> y enviado un correo a <strong>{createdPatient.email}</strong> con su enlace para acceder a FisioApp y cambiar su contraseña.
+                                Comparte estas credenciales iniciales con el paciente para su primer ingreso (el sistema le solicitará cambiar su contraseña al entrar):
                             </p>
+                            <div className="p-3 bg-white border border-teal-200 rounded-xl text-left text-xs space-y-1 font-mono text-slate-800">
+                                <p><strong>Usuario:</strong> {createdPatient.username}</p>
+                                <p><strong>Correo:</strong> {createdPatient.email}</p>
+                                {createdPatient.temporaryPassword && (
+                                    <p><strong>Clave Temporal:</strong> <span className="text-teal-700 font-bold">{createdPatient.temporaryPassword}</span></p>
+                                )}
+                            </div>
                         </div>
 
                         <Button

@@ -72,14 +72,28 @@ public class PaymentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada con ID: " + appointmentId));
 
+        if ("PAGADO".equalsIgnoreCase(appointment.getPaymentStatus())) {
+            throw new IllegalStateException("Esta cita ya se encuentra registrada como pagada.");
+        }
+
         appointment.setPaymentStatus(updateDTO.getPaymentStatus());
         appointment.setPaymentMethod(updateDTO.getPaymentMethod());
         appointment.setPaymentAmount(updateDTO.getAmount());
 
-        // Si se paga con PAQUETE, validar y descontar sesión
-        if ("PAQUETE".equalsIgnoreCase(updateDTO.getPaymentStatus()) && updateDTO.getPatientPackageId() != null) {
+        // Si se paga con PAQUETE, validar propiedad y descontar sesión
+        if ("PAQUETE".equalsIgnoreCase(updateDTO.getPaymentStatus())) {
+            if (updateDTO.getPatientPackageId() == null || updateDTO.getPatientPackageId().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Debe seleccionar un paquete válido para aplicar el descuento de sesión.");
+            }
+
             PatientPackage pkg = packageRepository.findById(updateDTO.getPatientPackageId())
                     .orElseThrow(() -> new IllegalArgumentException("Paquete no encontrado"));
+
+            if (pkg.getPatient() != null && appointment.getPatient() != null
+                    && !pkg.getPatient().getId().equals(appointment.getPatient().getId())) {
+                throw new IllegalArgumentException("El paquete seleccionado no pertenece al paciente de esta cita.");
+            }
 
             if (!pkg.hasAvailableSessions()) {
                 throw new IllegalStateException("El paquete seleccionado no tiene sesiones disponibles.");
@@ -124,6 +138,9 @@ public class PaymentService {
                 .appointmentDate(a.getAppointmentDate())
                 .reason(a.getReason())
                 .status(a.getStatus())
+                .appointmentType(a.getAppointmentType())
+                .clinicalNotes(a.getClinicalNotes())
+                .treatmentName(a.getTreatment() != null ? a.getTreatment().getName() : null)
                 .paymentStatus(a.getPaymentStatus())
                 .paymentAmount(a.getPaymentAmount())
                 .paymentMethod(a.getPaymentMethod())

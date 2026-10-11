@@ -64,6 +64,7 @@ public class ClinicalHistoryService {
                         // Modo Nueva Evaluación / Seguimiento
                         history = ClinicalHistory.builder()
                                         .patient(patient)
+                                        .physiotherapist(physio)
                                         .recordNumber(request.getRecordNumber() != null
                                                         && !request.getRecordNumber().isBlank()
                                                                         ? request.getRecordNumber()
@@ -71,7 +72,6 @@ public class ClinicalHistoryService {
                                         .build();
                 }
 
-                history.setPhysiotherapist(physio);
                 history.setEvaluationType(
                                 request.getEvaluationType() != null ? request.getEvaluationType()
                                                 : "VALORACION_INICIAL");

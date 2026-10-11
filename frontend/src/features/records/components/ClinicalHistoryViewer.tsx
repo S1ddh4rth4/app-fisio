@@ -307,7 +307,7 @@ export const ClinicalHistoryViewer = ({
         }));
     };
 
-    const clearSignature = (canvas: HTMLCanvasElement) => {
+    const clearSignature = (canvas: HTMLCanvasElement, target: 'patient' | 'physio' = 'patient') => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -315,7 +315,7 @@ export const ClinicalHistoryViewer = ({
             ...prev,
             comprehensivePlan: {
                 ...prev.comprehensivePlan,
-                patientSignature: '',
+                ...(target === 'patient' ? { patientSignature: '' } : { physioSignature: '' }),
             },
         }));
     };
@@ -973,11 +973,7 @@ export const ClinicalHistoryViewer = ({
                                                             const container = e.currentTarget.closest('.space-y-2');
                                                             const canvas = container?.querySelector('canvas');
                                                             if (canvas) {
-                                                                clearSignature(canvas);
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    comprehensivePlan: { ...prev.comprehensivePlan, physioSignature: '' }
-                                                                }));
+                                                                clearSignature(canvas, 'physio');
                                                             }
                                                         }}
                                                         className="text-xs text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer"
