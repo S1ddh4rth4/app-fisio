@@ -1007,7 +1007,7 @@ export const ClinicalHistoryViewer = ({
                 {/* ENCABEZADO MÉDICO GENERAL EN CADA HOJA (NEUTRO CLÍNICO) */}
                 <div className="border-b-2 border-slate-900 pb-3 mb-4 flex justify-between items-start">
                     <div>
-                        <h1 className="text-xl font-black text-slate-900 uppercase tracking-wide">FisioApp - Expediente Clínico</h1>
+                        <h1 className="text-xl font-black text-slate-900 uppercase tracking-wide">AppFisio - Expediente Clínico</h1>
                         <p className="text-[11px] font-semibold text-slate-600">Historia Clínica Fisioterapéutica & Valoración Biomecánica</p>
                     </div>
                     <div className="text-right text-[11px]">

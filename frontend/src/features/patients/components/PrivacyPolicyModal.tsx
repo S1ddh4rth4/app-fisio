@@ -29,7 +29,7 @@ export const PrivacyPolicyModal = ({ isOpen, onClose }: PrivacyPolicyModalProps)
                 {/* Cuerpo del Documento (Con Scroll) */}
                 <div className="p-6 overflow-y-auto text-sm text-slate-600 space-y-4">
                     <p><strong>Última actualización:</strong> {new Date().toLocaleDateString()}</p>
-                    <p>En cumplimiento con las normativas internacionales de protección de información en salud, <strong>FisioApp</strong> le informa que:</p>
+                    <p>En cumplimiento con las normativas internacionales de protección de información en salud, <strong>AppFisio</strong> le informa que:</p>
 
                     <h3 className="text-base font-bold text-slate-800 mt-4">1. Recopilación y Uso (Minimización)</h3>
                     <p>Los datos clínicos recabados (diagnósticos, notas de evolución y datos de contacto) serán utilizados única y exclusivamente para la conformación de su expediente clínico, diagnóstico y tratamiento fisioterapéutico.</p>

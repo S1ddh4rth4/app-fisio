@@ -378,7 +378,7 @@ export const LoginForm = () => {
     };
 
     const scrollToInfo = () => {
-        const infoEl = document.getElementById('fisioapp-info');
+        const infoEl = document.getElementById('appfisio-info');
         if (infoEl) {
             glideTo(infoEl.offsetTop);
         }
@@ -389,13 +389,13 @@ export const LoginForm = () => {
     };
 
     const whatsappUrl = `https://wa.me/${CONTACT_WHATSAPP}?text=${encodeURIComponent(
-        'Hola, vi la plataforma FisioApp y me gustaría recibir información sobre cómo implementarla o contratar tus servicios de desarrollo.'
+        'Hola, vi la plataforma AppFisio y me gustaría recibir información sobre cómo implementarla o contratar tus servicios de desarrollo.'
     )}`;
 
     const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-        'Información sobre FisioApp / Servicios de Desarrollo'
+        'Información sobre AppFisio / Servicios de Desarrollo'
     )}&body=${encodeURIComponent(
-        'Hola,\n\nMe interesa conocer más sobre la plataforma FisioApp y tus servicios de desarrollo.\n\nSaludos.'
+        'Hola,\n\nMe interesa conocer más sobre la plataforma AppFisio y tus servicios de desarrollo.\n\nSaludos.'
     )}`;
 
     return (
@@ -411,7 +411,7 @@ export const LoginForm = () => {
                             <Activity className="w-9 h-9" />
                         </div>
                         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                            FisioApp
+                            AppFisio
                         </h1>
                         <p className="mt-2 text-base text-slate-600 font-medium">
                             Portal de Fisioterapia & Rehabilitación Clínica
@@ -508,27 +508,27 @@ export const LoginForm = () => {
                     </p>
                 </div>
 
-                {/* Indicador sutil para hacer scroll y conocer FisioApp */}
+                {/* Indicador sutil para hacer scroll y conocer AppFisio */}
                 <button
                     type="button"
                     onClick={scrollToInfo}
                     className="mt-6 inline-flex flex-col items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/80 border border-slate-200/80 shadow-2xs text-xs font-semibold text-teal-700 hover:text-teal-800 hover:border-teal-300 hover:shadow-md transition-all duration-300 cursor-pointer group"
                 >
-                    <span>¿Eres fisioterapeuta o clínica? Conoce más sobre FisioApp</span>
+                    <span>¿Eres fisioterapeuta o clínica? Conoce más sobre AppFisio</span>
                     <ChevronDown className="w-4 h-4 animate-bounce text-teal-600" />
                 </button>
             </div>
 
             {/* ================= CONTENIDO INTERACTIVO AL HACER SCROLL ================= */}
-            <div id="fisioapp-info" className="border-t border-slate-200 bg-white">
+            <div id="appfisio-info" className="border-t border-slate-200 bg-white">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-24">
 
-                    {/* 1. ¿PARA QUIÉN ES FISIOAPP? */}
+                    {/* 1. ¿PARA QUIÉN ES APPFISIO? */}
                     <section className="space-y-10">
                         <ScrollReveal>
                             <div className="text-center max-w-3xl mx-auto space-y-3">
                                 <span className="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-3.5 py-1 rounded-full border border-teal-200">
-                                    ¿Para quién es FisioApp?
+                                    ¿Para quién es AppFisio?
                                 </span>
                                 <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                                     Diseñado para modernizar la práctica fisioterapéutica
@@ -819,10 +819,10 @@ export const LoginForm = () => {
                                         Implementación & Desarrollo de Software
                                     </span>
                                     <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                                        ¿Quieres implementar FisioApp en tu clínica o necesitas un sistema a medida?
+                                        ¿Quieres implementar AppFisio en tu clínica o necesitas un sistema a medida?
                                     </h2>
                                     <p className="text-sm text-slate-700 leading-relaxed">
-                                        Ponte en contacto directo con el creador de <strong>FisioApp</strong> para contratar una licencia para tu clínica, solicitar una demostración guiada o cotizar el desarrollo de una plataforma personalizada para tu negocio.
+                                        Ponte en contacto directo con el creador de <strong>AppFisio</strong> para contratar una licencia para tu clínica, solicitar una demostración guiada o cotizar el desarrollo de una plataforma personalizada para tu negocio.
                                     </p>
                                     <p className="text-xs font-semibold text-teal-900 pt-1">
                                         Desarrollado por: {CREATOR_NAME}
@@ -854,7 +854,7 @@ export const LoginForm = () => {
 
                     {/* Footer final con botón para subir al Login */}
                     <footer className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-                        <p>© {new Date().getFullYear()} FisioApp — Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} AppFisio — Todos los derechos reservados.</p>
                         <button
                             type="button"
                             onClick={scrollToTop}

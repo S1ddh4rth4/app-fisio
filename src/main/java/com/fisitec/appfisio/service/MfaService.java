@@ -25,7 +25,7 @@ public class MfaService {
         QrData data = new QrData.Builder()
                 .label(username)
                 .secret(secret)
-                .issuer("FisioApp")
+                .issuer("AppFisio")
                 .digits(6)
                 .period(30)
                 .build();
@@ -39,7 +39,7 @@ public class MfaService {
             QrData data = new QrData.Builder()
                     .label(username)
                     .secret(secret)
-                    .issuer("FisioApp")
+                    .issuer("AppFisio")
                     .digits(6)
                     .period(30)
                     .build();

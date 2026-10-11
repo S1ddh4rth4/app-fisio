@@ -31,7 +31,7 @@ export const Header = () => {
                 </div>
                 <div>
                     <h1 className="text-base font-bold text-slate-800 leading-tight">
-                        FisioApp
+                        AppFisio
                     </h1>
                     <p className="text-xs text-slate-500 hidden sm:block">
                         Portal de Fisioterapia & Rehabilitación Clínica

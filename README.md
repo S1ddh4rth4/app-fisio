@@ -1,4 +1,4 @@
-# FisioApp (Fisio-Tec) — Plataforma Clínica Full-Stack Multi-Tenant
+# AppFisio (Fisio-Tec) — Plataforma Clínica Full-Stack Multi-Tenant
 
 Sistema integral de gestión clínica, biomecánica y administrativa para clínicas de **Fisioterapia y Rehabilitación**, construido bajo arquitectura limpia por capas con **Java 17, Spring Boot 3.2.4, Oracle Database 21c XE, Flyway, React 18, TypeScript, Tailwind CSS y Docker**.
 
@@ -6,7 +6,7 @@ Sistema integral de gestión clínica, biomecánica y administrativa para clíni
 
 ## Descripción General
 
-**FisioApp** evolucionó de un módulo base de autenticación a una solución **HealthTech SaaS Multi-Tenant** completa que resuelve la operación diaria de una clínica de rehabilitación respetando estándares de privacidad y normativas médicas (como la **NOM-004-SSA3 del Expediente Clínico**):
+**AppFisio** evolucionó de un módulo base de autenticación a una solución **HealthTech SaaS Multi-Tenant** completa que resuelve la operación diaria de una clínica de rehabilitación respetando estándares de privacidad y normativas médicas (como la **NOM-004-SSA3 del Expediente Clínico**):
 
 - **Aislamiento Estricto Multi-Tenant por Rol:**
   - `ROLE_FISIOTERAPEUTA`: Gestiona de forma privada y aislada su propia cartera de pacientes (`primaryPhysio`), su catálogo personal de tratamientos y tarifas, su agenda, sus prescripciones de ejercicio, sus historias clínicas y sus métricas de ingresos.

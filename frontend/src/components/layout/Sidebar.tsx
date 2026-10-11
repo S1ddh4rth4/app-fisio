@@ -18,7 +18,7 @@ export const Sidebar = () => {
                     <Activity className="w-6 h-6" />
                 </div>
                 <div>
-                    <span className="font-bold text-slate-900 text-lg leading-tight block">FisioApp</span>
+                    <span className="font-bold text-slate-900 text-lg leading-tight block">AppFisio</span>
                     <span className="text-[11px] text-teal-600 font-semibold tracking-wider uppercase">Portal Clínico</span>
                 </div>
             </div>

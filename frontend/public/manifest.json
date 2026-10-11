@@ -1,6 +1,6 @@
 {
-    "short_name": "FisioApp",
-    "name": "FisioApp - Fisioterapia & Rehabilitación Clínica",
+    "short_name": "AppFisio",
+    "name": "AppFisio - Fisioterapia & Rehabilitación Clínica",
     "icons": [
         {
             "src": "/favicon.svg",
