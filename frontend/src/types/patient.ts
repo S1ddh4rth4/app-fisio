@@ -3,6 +3,8 @@ export interface PatientDTO {
     username: string;
     email: string;
     fullName?: string;
+    phone?: string;
+    mfaEnabled?: boolean;
     temporaryPassword?: string;
     roles: string[];
     enabled: boolean;

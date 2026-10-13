@@ -223,6 +223,10 @@ public class UserService {
             throw new IllegalArgumentException("La contraseña actual es incorrecta");
         }
 
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("La nueva contraseña no puede ser igual a la contraseña actual");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
         userRepository.save(user);

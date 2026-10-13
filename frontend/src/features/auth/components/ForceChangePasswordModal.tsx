@@ -46,6 +46,11 @@ export const ForceChangePasswordModal = () => {
             return;
         }
 
+        if (currentPassword === newPassword) {
+            setErrorMsg('La nueva contraseña no puede ser igual a la contraseña temporal recibida.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             await profileService.changePassword({ currentPassword, newPassword });

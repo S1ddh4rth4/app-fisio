@@ -13,7 +13,10 @@ export const Sidebar = () => {
 
     return (
         <aside className="hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col shrink-0">
-            <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-200">
+            <NavLink
+                to="/dashboard"
+                className="h-16 flex items-center gap-3 px-6 border-b border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+            >
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-teal-600 text-white shadow-md shadow-teal-600/20">
                     <Activity className="w-6 h-6" />
                 </div>
@@ -21,7 +24,7 @@ export const Sidebar = () => {
                     <span className="font-bold text-slate-900 text-lg leading-tight block">AppFisio</span>
                     <span className="text-[11px] text-teal-600 font-semibold tracking-wider uppercase">Portal Clínico</span>
                 </div>
-            </div>
+            </NavLink>
 
             <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
                 <div className="px-3 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">

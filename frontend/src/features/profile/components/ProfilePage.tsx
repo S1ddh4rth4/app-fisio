@@ -174,6 +174,11 @@ export const ProfilePage = () => {
             return;
         }
 
+        if (currentPassword === newPassword) {
+            setPasswordErrorMsg('La nueva contraseña no puede ser igual a tu contraseña actual.');
+            return;
+        }
+
         setIsSavingPassword(true);
         try {
             const res = await profileService.changePassword({

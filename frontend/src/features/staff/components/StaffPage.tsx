@@ -12,7 +12,13 @@ import {
     CheckCircle2,
     Loader2,
     AlertCircle,
-    User
+    User,
+    X,
+    Phone,
+    Award,
+    Shield,
+    Calendar,
+    KeyRound
 } from 'lucide-react';
 
 export const StaffPage = () => {
@@ -20,6 +26,7 @@ export const StaffPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<StaffUserDTO | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const fetchStaff = async () => {
@@ -153,18 +160,19 @@ export const StaffPage = () => {
                     {filteredStaff.map((member) => (
                         <div
                             key={member.id}
-                            className="bg-white p-6 rounded-3xl border border-slate-200/80 hover:border-teal-300 transition duration-200 shadow-xs flex flex-col justify-between space-y-4"
+                            onClick={() => setSelectedStaff(member)}
+                            className="bg-white p-6 rounded-3xl border border-slate-200/80 hover:border-teal-400 hover:shadow-md transition duration-200 shadow-xs flex flex-col justify-between space-y-4 cursor-pointer group"
                         >
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <div className="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold text-base">
+                                    <div className="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold text-base group-hover:scale-105 transition-transform">
                                         <User className="w-5 h-5" />
                                     </div>
                                     {getRoleBadge(member.roles)}
                                 </div>
 
                                 <div>
-                                    <h3 className="font-bold text-slate-900 text-base">
+                                    <h3 className="font-bold text-slate-900 text-base group-hover:text-teal-700 transition-colors">
                                         {member.fullName || member.username}
                                     </h3>
                                     <p className="text-xs text-slate-400 font-mono">@{member.username}</p>
@@ -179,8 +187,8 @@ export const StaffPage = () => {
                                 <span className="flex items-center gap-1 text-emerald-600 font-semibold">
                                     <CheckCircle2 className="w-3.5 h-3.5" /> Cuenta Activa
                                 </span>
-                                <span className="text-slate-400 text-[11px]">
-                                    ID: {member.id.substring(0, 8)}...
+                                <span className="text-teal-600 font-medium group-hover:underline">
+                                    Ver detalles →
                                 </span>
                             </div>
                         </div>
@@ -194,6 +202,97 @@ export const StaffPage = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={handleCreated}
             />
+
+            {/* Modal de Detalles del Miembro del Personal */}
+            {selectedStaff && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-teal-50 text-teal-700 rounded-2xl flex items-center justify-center font-bold text-lg border border-teal-100">
+                                    {(selectedStaff.fullName || selectedStaff.username).substring(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-slate-900 text-lg leading-tight">
+                                        {selectedStaff.fullName || selectedStaff.username}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-mono">@{selectedStaff.username}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedStaff(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3.5 text-sm">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl">
+                                <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                    <Shield className="w-4 h-4 text-teal-600" /> Rol Asignado
+                                </span>
+                                {getRoleBadge(selectedStaff.roles)}
+                            </div>
+
+                            <div className="p-3 bg-slate-50 rounded-2xl space-y-2.5">
+                                <div className="flex items-center gap-2.5 text-xs text-slate-700">
+                                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                                    <span><strong>Correo:</strong> {selectedStaff.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5 text-xs text-slate-700">
+                                    <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                                    <span><strong>Teléfono:</strong> {selectedStaff.phone || 'No registrado'}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5 text-xs text-slate-700">
+                                    <Award className="w-4 h-4 text-slate-400 shrink-0" />
+                                    <span><strong>Cédula Profesional:</strong> {selectedStaff.professionalLicense || 'Sin registrar'}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="p-3 bg-slate-50 rounded-2xl">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
+                                        Estado de Cuenta
+                                    </span>
+                                    <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                        {selectedStaff.enabled ? 'Habilitada' : 'Inactiva'}
+                                    </span>
+                                </div>
+
+                                <div className="p-3 bg-slate-50 rounded-2xl">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
+                                        Doble Factor (2FA)
+                                    </span>
+                                    <span className={`flex items-center gap-1.5 font-bold ${selectedStaff.mfaEnabled ? 'text-teal-700' : 'text-slate-500'}`}>
+                                        <KeyRound className="w-4 h-4" />
+                                        {selectedStaff.mfaEnabled ? 'Activo' : 'Desactivado'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {selectedStaff.createdAt && (
+                                <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>Miembro desde: {new Date(selectedStaff.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex justify-end">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setSelectedStaff(null)}
+                                className="w-full justify-center"
+                            >
+                                Cerrar Ficha
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

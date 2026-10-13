@@ -25,8 +25,11 @@ export interface StaffUserDTO {
     username: string;
     fullName?: string;
     email: string;
+    phone?: string;
+    professionalLicense?: string;
     roles: string[];
     enabled: boolean;
+    mfaEnabled?: boolean;
     createdAt?: string;
 }
 
