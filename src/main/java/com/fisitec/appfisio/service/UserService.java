@@ -229,6 +229,9 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
+        // Revocación inmediata: incrementamos la versión para expulsar sesiones en
+        // otros dispositivos
+        user.setTokenVersion(user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 1);
         userRepository.save(user);
     }
 

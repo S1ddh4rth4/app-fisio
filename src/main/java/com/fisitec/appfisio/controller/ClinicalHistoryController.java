@@ -42,23 +42,25 @@ public class ClinicalHistoryController {
             @PathVariable String patientId,
             Authentication authentication) {
 
-        boolean isPatient = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_PACIENTE"));
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
 
-        // Seguridad: el paciente no puede espiar otros IDs
-        if (isPatient && !authentication.getName().equalsIgnoreCase(patientId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        return ResponseEntity.ok(historyService.getHistoriesByPatient(patientId));
+        return ResponseEntity.ok(historyService.getHistoriesByPatient(patientId, authentication.getName(), isStaff));
     }
 
     /**
-     * Obtener una historia clínica por su ID.
+     * Obtener una historia clínica por su ID con verificación estricta de
+     * pertenencia.
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA', 'PACIENTE')")
-    public ResponseEntity<ClinicalHistoryResponseDTO> getHistoryById(@PathVariable String id) {
-        return ResponseEntity.ok(historyService.getHistoryById(id));
+    public ResponseEntity<ClinicalHistoryResponseDTO> getHistoryById(
+            @PathVariable String id,
+            Authentication authentication) {
+
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
+
+        return ResponseEntity.ok(historyService.getHistoryById(id, authentication.getName(), isStaff));
     }
 }

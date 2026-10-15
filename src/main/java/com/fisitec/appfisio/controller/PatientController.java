@@ -1,17 +1,16 @@
 package com.fisitec.appfisio.controller;
 
 import com.fisitec.appfisio.dto.PatientRegisterRequestDTO;
-import com.fisitec.appfisio.dto.UserDTO;
 import com.fisitec.appfisio.service.PatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/patients")
@@ -23,10 +22,23 @@ public class PatientController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA', 'RECEPCION')")
-    public ResponseEntity<List<UserDTO>> getPatients(Authentication authentication) {
+    public ResponseEntity<?> getPatients(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            Authentication authentication) {
         boolean isStaffAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_RECEPCION"));
 
+        // Modo Paginado: Si el cliente envía 'page', paginamos y limitamos a max 100
+        // por petición
+        if (page != null) {
+            int pageSize = (size != null && size > 0 && size <= 100) ? size : 20;
+            Pageable pageable = PageRequest.of(page, pageSize);
+            return ResponseEntity
+                    .ok(patientService.getPatientsForUserPaged(authentication.getName(), isStaffAdmin, pageable));
+        }
+
+        // Modo Plano: Retrocompatibilidad total con el frontend actual
         return ResponseEntity.ok(patientService.getPatientsForUser(authentication.getName(), isStaffAdmin));
     }
 

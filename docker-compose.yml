@@ -32,8 +32,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracledb:1521/XEPDB1
       SPRING_DATASOURCE_USERNAME: ${ORACLE_APP_USER:-appfisio}
       SPRING_DATASOURCE_PASSWORD: ${ORACLE_APP_PASSWORD:-appfisio}
-      JWT_SECRET: ${JWT_SECRET:-super_secreta_clave_de_32_caracteres_minimo}
-      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET:-ClaveSecretaSuperSeguraDe32Bytes}
+      JWT_SECRET: "${JWT_SECRET:?ERROR_CRITICO - JWT_SECRET no esta definido en el archivo .env}"
+      ENCRYPTION_SECRET: "${ENCRYPTION_SECRET:?ERROR_CRITICO - ENCRYPTION_SECRET no esta definido en el archivo .env}"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:5173,http://localhost}
       MAIL_USERNAME: ${MAIL_USERNAME:-app.fisio420@gmail.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}

@@ -1,6 +1,8 @@
 package com.fisitec.appfisio.repository;
 
 import com.fisitec.appfisio.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
@@ -38,6 +40,10 @@ public interface UserRepository extends JpaRepository<User, String> {
      * ROLE_FISIOTERAPEUTA).
      */
     List<User> findByRoles_Name(String roleName);
+
+    Page<User> findByRoles_Name(String roleName, Pageable pageable);
+
+    Page<User> findByIdIn(List<String> ids, Pageable pageable);
 
     /**
      * Cuenta el total de usuarios registrados bajo un rol determinado.

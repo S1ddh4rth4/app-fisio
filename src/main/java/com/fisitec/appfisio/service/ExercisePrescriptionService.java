@@ -8,6 +8,7 @@ import com.fisitec.appfisio.entity.User;
 import com.fisitec.appfisio.repository.ExercisePrescriptionRepository;
 import com.fisitec.appfisio.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,8 +90,16 @@ public class ExercisePrescriptionService {
         }
 
         @Transactional(readOnly = true)
-        public List<PrescriptionResponseDTO> getPatientPrescriptions(String patientIdentifier) {
+        public List<PrescriptionResponseDTO> getPatientPrescriptions(String patientIdentifier, String currentUsername,
+                        boolean isStaff) {
                 User patient = findUserByIdOrUsername(patientIdentifier);
+
+                // Candado BOLA / IDOR: Si es paciente, solo puede consultar sus propias rutinas
+                if (!isStaff && !patient.getUsername().equalsIgnoreCase(currentUsername)) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para consultar las rutinas de otro paciente.");
+                }
+
                 return prescriptionRepository.findByPatientIdOrderByCreatedAtDesc(patient.getId())
                                 .stream()
                                 .map(this::mapToDTO)
@@ -98,10 +107,18 @@ public class ExercisePrescriptionService {
         }
 
         @Transactional(readOnly = true)
-        public PrescriptionResponseDTO getPrescriptionById(String id) {
+        public PrescriptionResponseDTO getPrescriptionById(String id, String currentUsername, boolean isStaff) {
                 ExercisePrescription prescription = prescriptionRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException(
                                                 "Prescripción no encontrada con ID: " + id));
+
+                // Candado BOLA / IDOR: Si es paciente, solo puede consultar su propia
+                // prescripción
+                if (!isStaff && !prescription.getPatient().getUsername().equalsIgnoreCase(currentUsername)) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para consultar esta prescripción de ejercicios.");
+                }
+
                 return mapToDTO(prescription);
         }
 

@@ -2,6 +2,7 @@ package com.fisitec.appfisio.security;
 
 import com.fisitec.appfisio.service.JwtService;
 import com.fisitec.appfisio.service.UserService;
+import com.fisitec.appfisio.entity.User;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -70,31 +71,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.debug("JWT Token does not begin with Bearer String");
         }
 
-        // Once we get the token validate it.
+        // Validación de autenticidad, vigencia y no-revocación de la sesión
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userService.findByUsername(username)
-                    .map(user -> org.springframework.security.core.userdetails.User.builder()
-                            .username(user.getUsername())
-                            .password(user.getPassword())
-                            .disabled(!user.getEnabled())
-                            .authorities(user.getRoles().stream()
-                                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                                            role.getName()))
-                                    .collect(Collectors.toList()))
-                            .build())
-                    .orElse(null);
+            User user = userService.findByUsername(username).orElse(null);
 
-            // If token is valid configure Spring Security to manually set authentication
-            if (userDetails != null && jwtService.validateToken(jwtToken, userDetails)) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            if (user != null && Boolean.TRUE.equals(user.getEnabled())) {
+                Integer tokenVersion = jwtService.extractTokenVersion(jwtToken);
+                Integer activeVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 1;
 
-                // After setting the Authentication in the context, we specify
-                // that the current user is authenticated. So it passes the Spring Security
-                // Configurations successfully.
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                // Si el token fue revocado (ej. cambio de contraseña), denegamos el acceso
+                if (tokenVersion == null || !tokenVersion.equals(activeVersion)) {
+                    logger.warn("Acceso denegado: Token JWT revocado para el usuario " + username);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                        .username(user.getUsername())
+                        .password(user.getPassword())
+                        .disabled(!user.getEnabled())
+                        .authorities(user.getRoles().stream()
+                                .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                        role.getName()))
+                                .collect(Collectors.toList()))
+                        .build();
+
+                if (jwtService.validateToken(jwtToken, userDetails)) {
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
             }
         }
         filterChain.doFilter(request, response);

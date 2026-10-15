@@ -7,6 +7,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -24,9 +26,9 @@ public class JwtService {
     private String secretKey;
 
     /**
-     * JWT token expiration time in milliseconds (24 hours).
+     * Tiempo de expiración del token JWT: 4 horas por defecto (14,400,000 ms).
      */
-    @Value("${jwt.expiration:86400000}")
+    @Value("${jwt.expiration:14400000}")
     private long jwtExpiration;
 
     /**
@@ -97,28 +99,43 @@ public class JwtService {
     }
 
     /**
-     * Generate JWT token for user.
-     * 
-     * @param userDetails the user details
-     * @return the JWT token
+     * Genera un token JWT incluyendo la versión de sesión activa del usuario.
      */
-    public String generateToken(UserDetails userDetails) {
-        return createToken(userDetails.getUsername());
+    public String generateToken(UserDetails userDetails, Integer tokenVersion) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenVersion", tokenVersion != null ? tokenVersion : 1);
+        return createToken(claims, userDetails.getUsername());
     }
 
-    /**
-     * Create JWT token with username as subject.
-     * 
-     * @param subject the username
-     * @return the JWT token
-     */
-    private String createToken(String subject) {
+    public String generateToken(UserDetails userDetails) {
+        return generateToken(userDetails, 1);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    /**
+     * Extrae el número de versión de sesión con casteo seguro a Number.
+     */
+    public Integer extractTokenVersion(String token) {
+        try {
+            return extractClaim(token, claims -> {
+                Object val = claims.get("tokenVersion");
+                if (val instanceof Number number) {
+                    return number.intValue();
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

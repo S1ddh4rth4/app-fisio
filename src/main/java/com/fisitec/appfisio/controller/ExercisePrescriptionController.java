@@ -46,15 +46,11 @@ public class ExercisePrescriptionController {
             @PathVariable String patientIdentifier,
             Authentication authentication) {
 
-        boolean isPatient = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_PACIENTE"));
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
 
-        // Candado de privacidad: un paciente no puede espiar rutinas de otros
-        if (isPatient && !authentication.getName().equalsIgnoreCase(patientIdentifier)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        return ResponseEntity.ok(prescriptionService.getPatientPrescriptions(patientIdentifier));
+        return ResponseEntity
+                .ok(prescriptionService.getPatientPrescriptions(patientIdentifier, authentication.getName(), isStaff));
     }
 
     // Listar las rutinas propias del usuario autenticado (o todas si es Admin)
@@ -67,9 +63,15 @@ public class ExercisePrescriptionController {
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Obtener el detalle de una prescripción por su ID")
-    public ResponseEntity<PrescriptionResponseDTO> getPrescriptionById(@PathVariable String id) {
-        return ResponseEntity.ok(prescriptionService.getPrescriptionById(id));
+    @Operation(summary = "Obtener el detalle de una prescripción por su ID con candado de pertenencia")
+    public ResponseEntity<PrescriptionResponseDTO> getPrescriptionById(
+            @PathVariable String id,
+            Authentication authentication) {
+
+        boolean isStaff = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
+
+        return ResponseEntity.ok(prescriptionService.getPrescriptionById(id, authentication.getName(), isStaff));
     }
 
     @PatchMapping("/{id}/status")

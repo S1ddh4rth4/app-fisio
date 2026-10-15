@@ -77,6 +77,10 @@ public class User {
     @Column(name = "must_change_password", nullable = false)
     private Boolean mustChangePassword = false;
 
+    // --- Control de Sesión y Revocación de Tokens (JWT Hardening) ---
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 1;
+
     // --- Cumplimiento Legal y Consentimiento de Privacidad ---
     @Column(name = "privacy_policy_accepted_at")
     private LocalDateTime privacyPolicyAcceptedAt;

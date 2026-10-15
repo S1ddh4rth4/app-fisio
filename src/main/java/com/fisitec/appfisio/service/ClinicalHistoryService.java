@@ -84,10 +84,17 @@ public class ClinicalHistoryService {
         }
 
         @Transactional(readOnly = true)
-        public List<ClinicalHistoryResponseDTO> getHistoriesByPatient(String patientIdentifier) {
+        public List<ClinicalHistoryResponseDTO> getHistoriesByPatient(String patientIdentifier, String currentUsername,
+                        boolean isStaff) {
                 User patient = userRepository.findById(patientIdentifier)
                                 .or(() -> userRepository.findByUsername(patientIdentifier))
                                 .orElseThrow(() -> new IllegalArgumentException("Paciente no encontrado"));
+
+                // Candado BOLA / IDOR: Si no es personal clínico, debe ser el propio paciente
+                if (!isStaff && !patient.getUsername().equalsIgnoreCase(currentUsername)) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para consultar el historial clínico de otro paciente.");
+                }
 
                 return historyRepository.findByPatientIdOrderByCreatedAtDesc(patient.getId()).stream()
                                 .map(this::mapToDTO)
@@ -95,10 +102,17 @@ public class ClinicalHistoryService {
         }
 
         @Transactional(readOnly = true)
-        public ClinicalHistoryResponseDTO getHistoryById(String id) {
+        public ClinicalHistoryResponseDTO getHistoryById(String id, String currentUsername, boolean isStaff) {
                 ClinicalHistory history = historyRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException(
                                                 "Historia clínica no encontrada con ID: " + id));
+
+                // Candado BOLA / IDOR: Si es paciente, solo puede consultar su propia historia
+                // clínica
+                if (!isStaff && !history.getPatient().getUsername().equalsIgnoreCase(currentUsername)) {
+                        throw new AccessDeniedException("No tienes permisos para consultar esta historia clínica.");
+                }
+
                 return mapToDTO(history);
         }
 

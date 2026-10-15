@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +65,34 @@ public class AppointmentService {
                 return appointmentRepository.findByPatientId(patient.getId()).stream()
                                 .map(this::mapToDTO)
                                 .toList();
+        }
+
+        // Obtener citas paginadas con aislamiento estricto
+        @Transactional(readOnly = true)
+        public Page<AppointmentResponseDTO> getAppointmentsForCurrentUserPaged(Authentication authentication,
+                        Pageable pageable) {
+                String username = authentication.getName();
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isFisio = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
+
+                if (isAdmin) {
+                        return appointmentRepository.findAll(pageable).map(this::mapToDTO);
+                }
+
+                if (isFisio) {
+                        User professional = findUserByIdOrUsername(username);
+                        return appointmentRepository
+                                        .findByProfessionalIdOrderByAppointmentDateDesc(professional.getId(), pageable)
+                                        .map(this::mapToDTO);
+                }
+
+                // Paciente
+                User patient = findUserByIdOrUsername(username);
+                return appointmentRepository
+                                .findByPatientIdOrderByAppointmentDateDesc(patient.getId(), pageable)
+                                .map(this::mapToDTO);
         }
 
         // Obtener citas por paciente

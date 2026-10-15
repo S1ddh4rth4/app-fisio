@@ -71,23 +71,26 @@ public class AuthService {
      */
     public String login(String loginIdentifier, String password, String mfaCode) {
         User user = userService.findByUsername(loginIdentifier)
-                .orElseGet(() -> userService.findByEmail(loginIdentifier)
-                        .orElseThrow(() -> new BadCredentialsException("Invalid username/email or password")));
+                .orElseGet(() -> userService.findByEmail(loginIdentifier).orElse(null));
+
+        // Si el usuario no existe o la contraseña no coincide, penalizamos con retardo
+        // antes de rechazar
+        if (user == null || !userService.matchesPassword(password, user.getPassword())) {
+            applyProgressiveDelay();
+            throw new BadCredentialsException("Nombre de usuario, correo o contraseña incorrectos.");
+        }
 
         if (!user.getEnabled()) {
-            throw new BadCredentialsException("Account is disabled");
+            throw new BadCredentialsException("La cuenta se encuentra desactivada.");
         }
 
-        if (!userService.matchesPassword(password, user.getPassword())) {
-            throw new BadCredentialsException("Invalid username/email or password");
-        }
-
-        // --- 🛡️ FASE 6: VALIDACIÓN DE 2FA ---
+        // --- 🛡️ VALIDACIÓN DE 2FA ---
         if (user.getMfaEnabled()) {
             if (mfaCode == null || mfaCode.isBlank()) {
                 throw new RuntimeException("MFA_REQUIRED"); // Detiene el login y exige el código
             }
             if (!mfaService.verifyCode(user.getMfaSecret(), mfaCode)) {
+                applyProgressiveDelay();
                 throw new BadCredentialsException("El código de 6 dígitos es incorrecto o expiró.");
             }
         }
@@ -98,6 +101,19 @@ public class AuthService {
                 user.getRoles().stream()
                         .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(
                                 role.getName()))
-                        .collect(Collectors.toList())));
+                        .collect(Collectors.toList())),
+                user.getTokenVersion());
+    }
+
+    /**
+     * Introduce un retardo deliberado de 1 segundo para ralentizar ataques
+     * automatizados de fuerza bruta.
+     */
+    private void applyProgressiveDelay() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

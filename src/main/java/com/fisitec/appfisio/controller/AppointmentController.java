@@ -2,6 +2,8 @@ package com.fisitec.appfisio.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -21,12 +23,19 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
 
-    // Devuelve solo las citas del usuario autenticado (o todas si es Admin)
+    // Devuelve citas con soporte dual (Paginado o Plano para compatibilidad)
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<AppointmentResponseDTO>> getAppointments(Authentication authentication) {
-        List<AppointmentResponseDTO> appointments = appointmentService.getAppointmentsForCurrentUser(authentication);
-        return ResponseEntity.ok(appointments);
+    public ResponseEntity<?> getAppointments(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            Authentication authentication) {
+        if (page != null) {
+            int pageSize = (size != null && size > 0 && size <= 100) ? size : 20;
+            Pageable pageable = PageRequest.of(page, pageSize);
+            return ResponseEntity.ok(appointmentService.getAppointmentsForCurrentUserPaged(authentication, pageable));
+        }
+        return ResponseEntity.ok(appointmentService.getAppointmentsForCurrentUser(authentication));
     }
 
     /**

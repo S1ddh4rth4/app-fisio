@@ -3,6 +3,8 @@ package com.fisitec.appfisio.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +17,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
         List<Appointment> findByPatientId(String patientId);
 
+        Page<Appointment> findByPatientIdOrderByAppointmentDateDesc(String patientId, Pageable pageable);
+
         // Consulta de citas exclusivas de un fisioterapeuta
         List<Appointment> findByProfessionalIdOrderByAppointmentDateDesc(String professionalId);
+
+        Page<Appointment> findByProfessionalIdOrderByAppointmentDateDesc(String professionalId, Pageable pageable);
 
         List<Appointment> findByProfessionalIdAndAppointmentDateBetweenOrderByAppointmentDateAsc(
                         String professionalId,
