@@ -14,6 +14,7 @@ import {
     EyeOff,
     Sparkles
 } from 'lucide-react';
+import { PrivacyPolicyModal } from '../../patients/components/PrivacyPolicyModal';
 
 export const ForceChangePasswordModal = () => {
     const { logout, clearMustChangePassword } = useAuth();
@@ -23,6 +24,8 @@ export const ForceChangePasswordModal = () => {
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [acceptsPrivacyPolicy, setAcceptsPrivacyPolicy] = useState(false);
+    const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -53,8 +56,8 @@ export const ForceChangePasswordModal = () => {
 
         setIsLoading(true);
         try {
-            await profileService.changePassword({ currentPassword, newPassword });
-            clearMustChangePassword();
+            const res = await profileService.changePassword({ currentPassword, newPassword });
+            clearMustChangePassword(res.token);
         } catch (err: any) {
             setErrorMsg(err.response?.data?.message || 'Error al actualizar. Verifica tu contraseña temporal.');
         } finally {
@@ -173,6 +176,28 @@ export const ForceChangePasswordModal = () => {
                         }
                     />
 
+                    {/* Casilla de aceptación directa del Aviso de Privacidad por parte del usuario */}
+                    <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/70 transition">
+                        <input
+                            type="checkbox"
+                            required
+                            checked={acceptsPrivacyPolicy}
+                            onChange={(e) => setAcceptsPrivacyPolicy(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500 cursor-pointer"
+                        />
+                        <span className="text-xs text-slate-600 leading-relaxed">
+                            He leído y acepto el{' '}
+                            <button
+                                type="button"
+                                onClick={() => setIsPrivacyModalOpen(true)}
+                                className="text-teal-600 font-bold hover:underline hover:text-teal-700"
+                            >
+                                Aviso de Privacidad Integral
+                            </button>
+                            {' '}para el tratamiento y resguardo de mis datos personales y clínicos.
+                        </span>
+                    </label>
+
                     <div className="pt-2 flex flex-col gap-2">
                         <Button
                             type="submit"
@@ -180,7 +205,7 @@ export const ForceChangePasswordModal = () => {
                             size="md"
                             className="w-full"
                             isLoading={isLoading}
-                            disabled={!isPasswordValid || newPassword !== confirmPassword}
+                            disabled={!isPasswordValid || newPassword !== confirmPassword || !acceptsPrivacyPolicy}
                         >
                             Establecer Contraseña y Continuar
                         </Button>
@@ -197,6 +222,11 @@ export const ForceChangePasswordModal = () => {
                     </div>
                 </form>
             </div>
+
+            <PrivacyPolicyModal
+                isOpen={isPrivacyModalOpen}
+                onClose={() => setIsPrivacyModalOpen(false)}
+            />
         </div>
     );
 };

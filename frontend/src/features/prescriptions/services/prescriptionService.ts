@@ -26,4 +26,13 @@ export const prescriptionService = {
         const response = await api.patch<PrescriptionResponseDTO>(`/v1/prescriptions/${id}/status`, { status });
         return response.data;
     },
+
+    update: async (id: string, data: PrescriptionRequestDTO): Promise<PrescriptionResponseDTO> => {
+        const response = await api.put<PrescriptionResponseDTO>(`/v1/prescriptions/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: string): Promise<void> => {
+        await api.delete(`/v1/prescriptions/${id}`);
+    },
 };

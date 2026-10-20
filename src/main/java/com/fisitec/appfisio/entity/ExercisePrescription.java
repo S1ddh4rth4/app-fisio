@@ -58,6 +58,14 @@ public class ExercisePrescription {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Column(length = 500)
+    private String editReason;
+
+    @Column(length = 100)
+    private String editedBy;
+
+    private LocalDateTime editedAt;
+
     @Embeddable
     @Getter
     @Setter

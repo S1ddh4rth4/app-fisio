@@ -24,6 +24,7 @@ public class PaymentService {
     private final PatientPackageRepository packageRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     /**
      * Vender / Registrar compra de un paquete para un paciente.
@@ -108,7 +109,18 @@ public class PaymentService {
         }
 
         Appointment saved = appointmentRepository.save(appointment);
-        return mapToAppointmentDTO(saved);
+        AppointmentResponseDTO responseDTO = mapToAppointmentDTO(saved);
+
+        // Disparo no bloqueante del resumen clínico de la sesión liquidada con paquete
+        try {
+            if (emailService != null) {
+                emailService.sendSessionSummary(saved);
+            }
+        } catch (Exception ex) {
+            System.err.println("Error no bloqueante enviando resumen de sesión por paquete: " + ex.getMessage());
+        }
+
+        return responseDTO;
     }
 
     private PatientPackageResponseDTO mapToPackageDTO(PatientPackage p) {

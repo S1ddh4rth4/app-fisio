@@ -30,6 +30,9 @@ public class AppointmentService {
         private final AppointmentRepository appointmentRepository;
         private final GoogleCalendarService googleCalendarService;
         private final TreatmentRepository treatmentRepository;
+        private final com.fisitec.appfisio.repository.PatientPackageRepository patientPackageRepository;
+        private final AuditService auditService;
+        private final EmailService emailService;
 
         // Obtener todas las citas globales (utilizado por el Dashboard y Admin)
         @Transactional(readOnly = true)
@@ -219,6 +222,14 @@ public class AppointmentService {
 
                 Appointment savedAppointment = appointmentRepository.save(appointment);
 
+                // Disparo de correos transaccionales de confirmación con recomendaciones de
+                // vestimenta (Punto 12)
+                try {
+                        emailService.sendAppointmentConfirmation(savedAppointment);
+                } catch (Exception ex) {
+                        System.err.println("Error no bloqueante enviando correo de confirmación: " + ex.getMessage());
+                }
+
                 try {
                         com.fisitec.appfisio.dto.CalendarBookRequestDTO googleReq = new com.fisitec.appfisio.dto.CalendarBookRequestDTO();
                         googleReq.setProfesionalID(professional.getUsername());
@@ -246,18 +257,22 @@ public class AppointmentService {
                                                 "Usuario no encontrado: " + identifier));
         }
 
-        // Épica 4: Guardar notas clínicas
+        // Épica 4: Guardar notas clínicas con candado de pertenencia (BOLA/IDOR)
         @org.springframework.transaction.annotation.Transactional
-        public AppointmentResponseDTO saveClinicalNotes(Long id, String notes) {
+        public AppointmentResponseDTO saveClinicalNotes(Long id, String notes, Authentication authentication) {
                 Appointment appt = appointmentRepository.findById(id).orElseThrow();
+                validateAppointmentOwnership(appt, authentication);
                 appt.setClinicalNotes(notes);
                 return mapToDTO(appointmentRepository.save(appt));
         }
 
-        // Épica 4: Cobrar consulta y enlazar tratamiento
+        // Épica 4: Cobrar consulta y enlazar tratamiento con candado de pertenencia
+        // (BOLA/IDOR)
         @org.springframework.transaction.annotation.Transactional
-        public AppointmentResponseDTO processPayment(Long id, String treatmentId, String paymentMethod) {
+        public AppointmentResponseDTO processPayment(Long id, String treatmentId, String paymentMethod,
+                        Authentication authentication) {
                 Appointment appt = appointmentRepository.findById(id).orElseThrow();
+                validateAppointmentOwnership(appt, authentication);
                 Treatment treatment = treatmentRepository.findById(treatmentId).orElseThrow();
 
                 appt.setTreatment(treatment);
@@ -266,7 +281,121 @@ public class AppointmentService {
                 appt.setPaymentStatus("PAGADO");
                 appt.setStatus("COMPLETED"); // Cerramos la cita automáticamente al pagarla
 
-                return mapToDTO(appointmentRepository.save(appt));
+                Appointment paidAppt = appointmentRepository.save(appt);
+                AppointmentResponseDTO responseDTO = mapToDTO(paidAppt);
+
+                // Disparo de correo de resumen clínico y comprobante de atención (Punto 13)
+                // Se invoca después de mapToDTO para garantizar que las entidades LAZY ya están
+                // inicializadas
+                try {
+                        emailService.sendSessionSummary(paidAppt);
+                } catch (Exception ex) {
+                        System.err.println("Error no bloqueante enviando resumen de sesión: " + ex.getMessage());
+                }
+
+                return responseDTO;
+        }
+
+        // Revertir cobro registrado por error y restaurar sesión de paquete si aplica
+        @org.springframework.transaction.annotation.Transactional
+        public AppointmentResponseDTO revertPayment(Long id, Authentication authentication) {
+                Appointment appt = appointmentRepository.findById(id).orElseThrow();
+                validateAppointmentOwnership(appt, authentication);
+
+                if (!"PAGADO".equalsIgnoreCase(appt.getPaymentStatus())) {
+                        throw new IllegalStateException("Esta cita no cuenta con un cobro registrado para revertir.");
+                }
+
+                String previousMethod = appt.getPaymentMethod();
+                java.math.BigDecimal previousAmount = appt.getPaymentAmount();
+
+                // Si se había cobrado descontando de un paquete, devolver +1 sesión al paquete
+                if (appt.getPatientPackage() != null) {
+                        com.fisitec.appfisio.entity.PatientPackage pkg = appt.getPatientPackage();
+                        pkg.refundSession();
+                        if (patientPackageRepository != null) {
+                                patientPackageRepository.save(pkg);
+                        }
+                        appt.setPatientPackage(null);
+                }
+
+                appt.setTreatment(null);
+                appt.setPaymentMethod(null);
+                appt.setPaymentAmount(null);
+                appt.setPaymentStatus("PENDIENTE");
+                appt.setStatus("SCHEDULED");
+
+                Appointment revertedAppt = appointmentRepository.save(appt);
+
+                if (authentication != null && auditService != null) {
+                        String targetPatientId = appt.getPatient() != null ? appt.getPatient().getId() : "N/A";
+                        auditService.logAction(
+                                        authentication.getName(),
+                                        "REVERT_PAYMENT",
+                                        targetPatientId,
+                                        "Revirtió el cobro de la cita #" + id + " (Método previo: " + previousMethod
+                                                        + ", Monto previo: $" + previousAmount + ")");
+                }
+
+                return mapToDTO(revertedAppt);
+        }
+
+        // Cancelar una cita pendiente y liberar el horario en la agenda
+        @org.springframework.transaction.annotation.Transactional
+        public void cancelAppointment(Long id, Authentication authentication) {
+                Appointment appt = appointmentRepository.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada con ID: " + id));
+
+                if (authentication != null) {
+                        boolean isAdminOrReception = authentication.getAuthorities().stream()
+                                        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                                                        || a.getAuthority().equals("ROLE_RECEPCION"));
+                        boolean isAssignedPhysio = appt.getProfessional() != null
+                                        && appt.getProfessional().getUsername()
+                                                        .equalsIgnoreCase(authentication.getName());
+                        boolean isOwnPatient = appt.getPatient() != null
+                                        && appt.getPatient().getUsername().equalsIgnoreCase(authentication.getName());
+
+                        if (!isAdminOrReception && !isAssignedPhysio && !isOwnPatient) {
+                                throw new org.springframework.security.access.AccessDeniedException(
+                                                "No tienes permisos para cancelar esta cita.");
+                        }
+                }
+
+                if ("PAGADO".equalsIgnoreCase(appt.getPaymentStatus())) {
+                        throw new IllegalStateException(
+                                        "No se puede cancelar una cita que ya fue cobrada. Si fue un error, primero revierte el cobro en la pestaña Caja.");
+                }
+
+                String targetPatientId = appt.getPatient() != null ? appt.getPatient().getId() : "N/A";
+                LocalDateTime apptDate = appt.getAppointmentDate();
+
+                appointmentRepository.delete(appt);
+
+                if (authentication != null && auditService != null) {
+                        auditService.logAction(
+                                        authentication.getName(),
+                                        "CANCEL_APPOINTMENT",
+                                        targetPatientId,
+                                        "Canceló y liberó el horario de la cita #" + id + " programada para "
+                                                        + apptDate);
+                }
+        }
+
+        private void validateAppointmentOwnership(Appointment appt, Authentication authentication) {
+                if (authentication == null) {
+                        return;
+                }
+                boolean isAdminOrReception = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                                                || a.getAuthority().equals("ROLE_RECEPCION"));
+                boolean isAssignedPhysio = appt.getProfessional() != null
+                                && appt.getProfessional().getUsername().equalsIgnoreCase(authentication.getName());
+
+                if (!isAdminOrReception && !isAssignedPhysio) {
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "No tienes permisos para modificar o cobrar una cita asignada a otro fisioterapeuta.");
+                }
         }
 
         private String formatDisplayName(User user) {

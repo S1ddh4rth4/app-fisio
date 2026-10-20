@@ -65,4 +65,13 @@ public class PatientPackage {
             this.status = "AGOTADO";
         }
     }
+
+    public void refundSession() {
+        if (this.usedSessions != null && this.usedSessions > 0) {
+            this.usedSessions--;
+        }
+        if ("AGOTADO".equalsIgnoreCase(this.status) && this.usedSessions < this.totalSessions) {
+            this.status = "ACTIVO";
+        }
+    }
 }

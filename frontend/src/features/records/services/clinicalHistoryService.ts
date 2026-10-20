@@ -19,4 +19,9 @@ export const clinicalHistoryService = {
         const response = await api.post<ClinicalHistoryResponseDTO>('/v1/clinical-histories', data);
         return response.data;
     },
+
+    // Eliminar historia clínica creada por error (Punto 8)
+    delete: async (id: string): Promise<void> => {
+        await api.delete(`/v1/clinical-histories/${id}`);
+    },
 };

@@ -21,6 +21,7 @@ public class ClinicalHistoryService {
 
         private final ClinicalHistoryRepository historyRepository;
         private final UserRepository userRepository;
+        private final AuditService auditService;
 
         @Transactional
         public ClinicalHistoryResponseDTO saveOrUpdateHistory(ClinicalHistoryRequestDTO request,
@@ -114,6 +115,45 @@ public class ClinicalHistoryService {
                 }
 
                 return mapToDTO(history);
+        }
+
+        @Transactional
+        public void deleteHistory(String id, String currentUsername) {
+                ClinicalHistory history = historyRepository.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Historia clínica no encontrada con ID: " + id));
+
+                User currentUser = userRepository.findByUsername(currentUsername)
+                                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+                boolean isAdmin = currentUser.getRoles().stream()
+                                .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
+                boolean isAuthor = history.getPhysiotherapist().getUsername().equalsIgnoreCase(currentUsername);
+
+                if (!isAdmin && !isAuthor) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para eliminar la historia clínica firmada por otro profesional.");
+                }
+
+                // Si es fisioterapeuta, solo se permite eliminar si fue creada dentro de las
+                // últimas 24 horas
+                // para permitir corregir duplicados accidentales del mismo día.
+                if (!isAdmin && history.getCreatedAt() != null
+                                && history.getCreatedAt().isBefore(LocalDateTime.now().minusHours(24))) {
+                        throw new IllegalStateException(
+                                        "Esta historia clínica tiene más de 24 horas y forma parte del archivo legal sellado. Solo un Administrador puede revocarla.");
+                }
+
+                String targetPatientId = history.getPatient() != null ? history.getPatient().getId() : "N/A";
+                String recordNumber = history.getRecordNumber();
+
+                historyRepository.delete(history);
+
+                auditService.logAction(
+                                currentUsername,
+                                "DELETE_CLINICAL_HISTORY",
+                                targetPatientId,
+                                "Eliminó la evaluación clínica ID=" + id + " (Expediente: " + recordNumber + ")");
         }
 
         private ClinicalHistoryResponseDTO mapToDTO(ClinicalHistory h) {

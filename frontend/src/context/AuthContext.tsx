@@ -7,7 +7,7 @@ interface AuthContextType {
     logout: () => void;
     isAuthenticated: boolean;
     hasRole: (role: string) => boolean;
-    clearMustChangePassword: () => void;
+    clearMustChangePassword: (newToken?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,9 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     };
 
-    const clearMustChangePassword = () => {
+    const clearMustChangePassword = (newToken?: string) => {
         localStorage.setItem('mustChangePassword', 'false');
-        setUser((prev) => prev ? { ...prev, mustChangePassword: false } : null);
+        if (newToken) {
+            localStorage.setItem('token', newToken);
+        }
+        setUser((prev) => prev ? {
+            ...prev,
+            token: newToken || prev.token,
+            mustChangePassword: false
+        } : null);
     };
 
     const logout = () => {

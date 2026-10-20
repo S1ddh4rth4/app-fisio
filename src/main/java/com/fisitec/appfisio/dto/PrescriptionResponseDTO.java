@@ -24,6 +24,9 @@ public class PrescriptionResponseDTO {
     private LocalDate endDate;
     private String status;
     private List<PrescriptionItemDTO> items;
+    private String editReason;
+    private String editedBy;
+    private LocalDateTime editedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

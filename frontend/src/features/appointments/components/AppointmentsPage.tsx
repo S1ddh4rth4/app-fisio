@@ -77,6 +77,22 @@ export const AppointmentsPage = () => {
     setAppointments((prev) =>
       prev.map((app) => (app.id === updated.id ? updated : app))
     );
+    setSelectedAppointment(updated);
+  };
+
+  const handleDeleted = (deletedId: number) => {
+    setAppointments((prev) => prev.filter((app) => app.id !== deletedId));
+    setSelectedAppointment(null);
+  };
+
+  const handlePatientCancel = async (id: number) => {
+    if (!window.confirm('¿Deseas cancelar tu cita programada?')) return;
+    try {
+      await appointmentService.cancelAppointment(id);
+      handleDeleted(id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'No fue posible cancelar la cita.');
+    }
   };
 
   const formatTimeOnly = (dateStr: string) => {
@@ -350,7 +366,7 @@ export const AppointmentsPage = () => {
                         </p>
                       </div>
 
-                      {isStaffOrAdmin && (
+                      {isStaffOrAdmin ? (
                         <div className="pt-2 border-t border-slate-200/60 flex justify-end">
                           <button
                             onClick={() => setSelectedAppointment(app)}
@@ -359,6 +375,17 @@ export const AppointmentsPage = () => {
                             Abrir Expediente →
                           </button>
                         </div>
+                      ) : (
+                        app.paymentStatus !== 'PAGADO' && (
+                          <div className="pt-2 border-t border-slate-200/60 flex justify-end">
+                            <button
+                              onClick={() => handlePatientCancel(app.id)}
+                              className="text-xs font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
+                            >
+                              Cancelar cita
+                            </button>
+                          </div>
+                        )
                       )}
                     </div>
                   ))}
@@ -406,6 +433,7 @@ export const AppointmentsPage = () => {
         appointment={selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
         onUpdate={handlePaymentSuccess}
+        onDelete={handleDeleted}
       />
 
       <BuyPackageModal

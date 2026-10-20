@@ -29,6 +29,8 @@ public class PrescriptionRequestDTO {
 
     private LocalDate endDate;
 
+    private String editReason;
+
     @NotEmpty(message = "Debe incluir al menos un ejercicio en la prescripción")
     @Valid
     private List<PrescriptionItemDTO> items;

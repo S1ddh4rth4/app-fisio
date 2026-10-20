@@ -308,7 +308,7 @@ export const PatientsPage = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className={`grid ${hasRole('ROLE_ADMIN') ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-xs`}>
                                 <div className="p-3 bg-slate-50 rounded-2xl">
                                     <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
                                         Estado de Cuenta
@@ -319,15 +319,17 @@ export const PatientsPage = () => {
                                     </span>
                                 </div>
 
-                                <div className="p-3 bg-slate-50 rounded-2xl">
-                                    <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
-                                        Doble Factor (2FA)
-                                    </span>
-                                    <span className={`flex items-center gap-1.5 font-bold ${selectedPatient.mfaEnabled ? 'text-teal-700' : 'text-slate-500'}`}>
-                                        <KeyRound className="w-4 h-4" />
-                                        {selectedPatient.mfaEnabled ? 'Activo' : 'Desactivado'}
-                                    </span>
-                                </div>
+                                {hasRole('ROLE_ADMIN') && (
+                                    <div className="p-3 bg-slate-50 rounded-2xl">
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
+                                            Doble Factor (2FA)
+                                        </span>
+                                        <span className={`flex items-center gap-1.5 font-bold ${selectedPatient.mfaEnabled ? 'text-teal-700' : 'text-slate-500'}`}>
+                                            <KeyRound className="w-4 h-4" />
+                                            {selectedPatient.mfaEnabled ? 'Activo' : 'Desactivado'}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             {selectedPatient.createdAt && (

@@ -20,8 +20,8 @@ export const TreatmentModal = ({
 }: TreatmentModalProps) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [durationMinutes, setDurationMinutes] = useState(45);
-    const [price, setPrice] = useState(500);
+    const [durationMinutes, setDurationMinutes] = useState('45');
+    const [price, setPrice] = useState('500');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -29,13 +29,13 @@ export const TreatmentModal = ({
         if (initialData) {
             setName(initialData.name);
             setDescription(initialData.description);
-            setDurationMinutes(initialData.durationMinutes);
-            setPrice(initialData.price);
+            setDurationMinutes(String(initialData.durationMinutes));
+            setPrice(String(initialData.price));
         } else {
             setName('');
             setDescription('');
-            setDurationMinutes(45);
-            setPrice(500);
+            setDurationMinutes('45');
+            setPrice('500');
         }
     }, [initialData, isOpen]);
 
@@ -52,8 +52,8 @@ export const TreatmentModal = ({
                 const updated = await treatmentService.update(initialData.id, {
                     name,
                     description,
-                    durationMinutes: Number(durationMinutes),
-                    price: Number(price),
+                    durationMinutes: Number(durationMinutes) || 45,
+                    price: Number(price) || 0,
                 });
                 onSuccess(updated);
             } else {
@@ -61,8 +61,8 @@ export const TreatmentModal = ({
                 const created = await treatmentService.create({
                     name,
                     description,
-                    durationMinutes: Number(durationMinutes),
-                    price: Number(price),
+                    durationMinutes: Number(durationMinutes) || 45,
+                    price: Number(price) || 0,
                 });
                 onSuccess(created);
             }
@@ -122,7 +122,7 @@ export const TreatmentModal = ({
                             required
                             placeholder="ej. 45"
                             value={durationMinutes}
-                            onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                            onChange={(e) => setDurationMinutes(e.target.value)}
                             leftIcon={<Clock className="w-5 h-5" />}
                             helperText="Mínimo 15 minutos"
                         />
@@ -135,7 +135,7 @@ export const TreatmentModal = ({
                             required
                             placeholder="ej. 500"
                             value={price}
-                            onChange={(e) => setPrice(Number(e.target.value))}
+                            onChange={(e) => setPrice(e.target.value)}
                             leftIcon={<DollarSign className="w-5 h-5" />}
                         />
                     </div>

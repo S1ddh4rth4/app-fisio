@@ -43,4 +43,15 @@ export const appointmentService = {
         const response = await api.patch<AppointmentResponseDTO>(`/v1/appointments/${id}/pay`, { treatmentId, paymentMethod });
         return response.data;
     },
+
+    // Revertir un cobro registrado por error
+    revertPayment: async (id: number): Promise<AppointmentResponseDTO> => {
+        const response = await api.patch<AppointmentResponseDTO>(`/v1/appointments/${id}/revert-payment`);
+        return response.data;
+    },
+
+    // Cancelar una cita pendiente y liberar el horario
+    cancelAppointment: async (id: number): Promise<void> => {
+        await api.delete(`/v1/appointments/${id}`);
+    },
 };

@@ -3,6 +3,7 @@ package com.fisitec.appfisio.controller;
 import com.fisitec.appfisio.dto.ClinicalHistoryRequestDTO;
 import com.fisitec.appfisio.dto.ClinicalHistoryResponseDTO;
 import com.fisitec.appfisio.service.ClinicalHistoryService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -62,5 +63,15 @@ public class ClinicalHistoryController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
 
         return ResponseEntity.ok(historyService.getHistoryById(id, authentication.getName(), isStaff));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
+    @Operation(summary = "Eliminar una historia clínica creada por error (con ventana de 24h para terapeutas)")
+    public ResponseEntity<Void> deleteHistory(
+            @PathVariable String id,
+            Authentication authentication) {
+        historyService.deleteHistory(id, authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }

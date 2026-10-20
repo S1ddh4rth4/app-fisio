@@ -17,7 +17,10 @@ import {
     Pill,
     ShieldCheck,
     PhoneCall,
-    UserCheck
+    UserCheck,
+    ZoomIn,
+    ZoomOut,
+    Trash2
 } from 'lucide-react';
 
 interface ClinicalHistoryViewerProps {
@@ -184,6 +187,7 @@ export const ClinicalHistoryViewer = ({
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [bodyZoom, setBodyZoom] = useState(1);
 
     useEffect(() => {
         if (initialHistory) {
@@ -192,7 +196,6 @@ export const ClinicalHistoryViewer = ({
                 setFormData({ ...defaultFormData, ...parsed });
                 setEvaluationType(initialHistory.evaluationType || 'VALORACION_INICIAL');
                 setHistoryId(initialHistory.id);
-                // Si la historia ya tiene firmas guardadas, las sellamos
                 setSealedSignatures({
                     patient: parsed.comprehensivePlan?.patientSignature || '',
                     physio: parsed.comprehensivePlan?.physioSignature || '',
@@ -206,8 +209,59 @@ export const ClinicalHistoryViewer = ({
                 patientName: patientUsername,
                 therapistName: user?.username || 'Fisioterapeuta',
             }));
+
+            // Prevención de Duplicados (Punto 8): Si se abrió desde la cita sin ID,
+            // verificar si el paciente ya tiene una historia abierta hoy para continuar editándola
+            if (patientId) {
+                clinicalHistoryService.getByPatient(patientId)
+                    .then((histories) => {
+                        if (histories && histories.length > 0) {
+                            const latest = histories[0];
+                            const createdDate = latest.createdAt ? new Date(latest.createdAt) : null;
+                            const isTodayOrRecent = createdDate && (Date.now() - createdDate.getTime()) < 24 * 60 * 60 * 1000;
+                            const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+                            const isSameAuthor = Boolean(
+                                user?.username &&
+                                latest.physiotherapistName?.toLowerCase().includes(user.username.toLowerCase())
+                            );
+                            if (isTodayOrRecent && (isAdmin || isSameAuthor)) {
+                                try {
+                                    const parsed = JSON.parse(latest.formDataJson);
+                                    setFormData({ ...defaultFormData, ...parsed });
+                                    setEvaluationType(latest.evaluationType || 'VALORACION_INICIAL');
+                                    setHistoryId(latest.id);
+                                    setSealedSignatures({
+                                        patient: parsed.comprehensivePlan?.patientSignature || '',
+                                        physio: parsed.comprehensivePlan?.physioSignature || '',
+                                    });
+                                } catch { }
+                            }
+                        }
+                    })
+                    .catch(() => { });
+            }
         }
-    }, [initialHistory, patientUsername, user?.username]);
+    }, [initialHistory, patientId, patientUsername, user?.username]);
+
+    const handleDeleteHistory = async () => {
+        if (!historyId) return;
+        if (!window.confirm('¿Estás seguro de eliminar esta evaluación/historia clínica creada por error? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await clinicalHistoryService.delete(historyId);
+            setSuccessMsg('Historia clínica eliminada correctamente.');
+            onSaved?.();
+            setTimeout(() => {
+                onClose();
+            }, 900);
+        } catch (err: any) {
+            setErrorMsg(err.response?.data?.message || 'Error al eliminar la historia clínica.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Autocálculo de IMC
     const handleWeightHeightChange = (weightStr: string, heightStr: string) => {
@@ -385,47 +439,59 @@ export const ClinicalHistoryViewer = ({
                             </h2>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-xs px-2.5 sm:px-3"
+                                className="text-xs px-2 sm:px-3"
                                 onClick={handlePrint}
-                                leftIcon={<Printer className="w-3.5 h-3.5" />}
+                                leftIcon={<Printer className="w-3.5 h-3.5 shrink-0" />}
                             >
-                                Imprimir / PDF
+                                <span className="hidden sm:inline">Imprimir / </span>PDF
                             </Button>
 
                             {!isPatient && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center gap-1.5">
                                     {historyId && (
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="text-xs px-2.5 sm:px-3 text-teal-700 border-teal-300 hover:bg-teal-50"
+                                            className="text-xs px-2 sm:px-3 text-teal-700 border-teal-300 hover:bg-teal-50"
                                             onClick={() => handleSave(true)}
                                             isLoading={isLoading}
                                             title="Crea una nueva evaluación de seguimiento sin modificar el registro sellado anterior"
                                         >
-                                            Guardar como Nueva Reevaluación
+                                            <span className="hidden sm:inline">Guardar como </span>+ Reevaluar
                                         </Button>
                                     )}
                                     <Button
                                         variant="primary"
                                         size="sm"
-                                        className="text-xs px-3 sm:px-4"
+                                        className="text-xs px-2.5 sm:px-4"
                                         onClick={() => handleSave(false)}
                                         isLoading={isLoading}
-                                        leftIcon={<Save className="w-3.5 h-3.5" />}
+                                        leftIcon={<Save className="w-3.5 h-3.5 shrink-0" />}
                                     >
                                         {historyId ? 'Actualizar' : 'Guardar'}
                                     </Button>
+
+                                    {historyId && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteHistory}
+                                            disabled={isLoading}
+                                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-rose-200"
+                                            title="Eliminar esta evaluación creada por error"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
                             <button
                                 onClick={onClose}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer shrink-0"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -654,58 +720,101 @@ export const ClinicalHistoryViewer = ({
                         {/* PÁGINA 5: MAPA ANATÓMICO DE DOLOR & MARCHA */}
                         {currentPage === 5 && (
                             <div className="space-y-6">
-                                <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100 flex items-center justify-between">
+                                <div className="bg-teal-50/50 p-4 rounded-2xl border border-teal-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-sm font-bold text-teal-900 uppercase">Página 5: Mapa Corporal de Dolor y Análisis Funcional</h3>
                                         <p className="text-xs text-teal-700">Haz clic sobre el cuerpo humano para señalar los puntos donde el paciente refiere dolor o lesión.</p>
                                     </div>
-                                    {((formData as any).painPoints || []).length > 0 && !isPatient && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, ...({ painPoints: [] } as any) })}
-                                            className="text-xs text-rose-600 font-bold hover:underline bg-white px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs"
-                                        >
-                                            Limpiar Puntos
-                                        </button>
-                                    )}
+
+                                    {/* Controles de Zoom y Limpieza (Punto 11) */}
+                                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                                        <div className="flex items-center bg-white rounded-xl border border-slate-200 p-0.5 shadow-2xs">
+                                            <button
+                                                type="button"
+                                                onClick={() => setBodyZoom((prev) => Math.max(1, Number((prev - 0.25).toFixed(2))))}
+                                                disabled={bodyZoom <= 1}
+                                                className="p-1 text-slate-500 hover:text-teal-700 disabled:opacity-30 cursor-pointer"
+                                                title="Alejar Zoom"
+                                            >
+                                                <ZoomOut className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[11px] font-bold text-slate-700 px-2 min-w-[48px] text-center select-none">
+                                                {Math.round(bodyZoom * 100)}%
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBodyZoom((prev) => Math.min(2.25, Number((prev + 0.25).toFixed(2))))}
+                                                disabled={bodyZoom >= 2.25}
+                                                className="p-1 text-slate-500 hover:text-teal-700 disabled:opacity-30 cursor-pointer"
+                                                title="Acercar Zoom"
+                                            >
+                                                <ZoomIn className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        {bodyZoom > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setBodyZoom(1)}
+                                                className="text-xs text-slate-600 hover:text-slate-900 bg-white px-2 py-1 rounded-xl border border-slate-200 shadow-2xs"
+                                                title="Restablecer tamaño normal"
+                                            >
+                                                100%
+                                            </button>
+                                        )}
+
+                                        {((formData as any).painPoints || []).length > 0 && !isPatient && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, ...({ painPoints: [] } as any) })}
+                                                className="text-xs text-rose-600 font-bold hover:underline bg-white px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs"
+                                            >
+                                                Limpiar Puntos
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Lienzo Interactivo con Silueta Anatómica Frontal y Dorsal */}
+                                {/* Lienzo Interactivo con Zoom y Scroll Suave */}
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center">
-                                    <div
-                                        className="relative bg-white border border-slate-300 rounded-2xl p-2 shadow-inner cursor-crosshair select-none"
-                                        onClick={(e) => {
-                                            if (isPatient) return;
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                            const y = ((e.clientY - rect.top) / rect.height) * 100;
-                                            const currentPoints = (formData as any).painPoints || [];
-                                            setFormData({
-                                                ...formData,
-                                                ...({ painPoints: [...currentPoints, { x: x.toFixed(1), y: y.toFixed(1) }] } as any)
-                                            });
-                                        }}
-                                    >
-                                        <img
-                                            src="/body-map.png"
-                                            alt="Mapa Corporal"
-                                            className="h-[360px] sm:h-[420px] object-contain pointer-events-none"
-                                        />
+                                    <div className="w-full overflow-auto max-h-[500px] flex justify-center p-2 rounded-xl bg-slate-100/60 border border-slate-200/60">
+                                        <div
+                                            className="relative bg-white border border-slate-300 rounded-2xl p-2 shadow-inner cursor-crosshair select-none transition-all duration-150 shrink-0"
+                                            style={{ height: `${Math.round(420 * bodyZoom)}px` }}
+                                            onClick={(e) => {
+                                                if (isPatient) return;
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                                const currentPoints = (formData as any).painPoints || [];
+                                                setFormData({
+                                                    ...formData,
+                                                    ...({ painPoints: [...currentPoints, { x: x.toFixed(1), y: y.toFixed(1) }] } as any)
+                                                });
+                                            }}
+                                        >
+                                            <img
+                                                src="/body-map.png"
+                                                alt="Mapa Corporal"
+                                                style={{ height: '100%' }}
+                                                className="object-contain pointer-events-none mx-auto"
+                                            />
 
-                                        {/* Puntos rojos de dolor marcados */}
-                                        {((formData as any).painPoints || []).map((pt: any, idx: number) => (
-                                            <div
-                                                key={idx}
-                                                style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
-                                                className="absolute w-4 h-4 -ml-2 -mt-2 bg-rose-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shadow-md animate-pulse ring-2 ring-white"
-                                                title={`Punto de dolor #${idx + 1}`}
-                                            >
-                                                {idx + 1}
-                                            </div>
-                                        ))}
+                                            {/* Puntos rojos de dolor marcados */}
+                                            {((formData as any).painPoints || []).map((pt: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
+                                                    className="absolute w-4 h-4 -ml-2 -mt-2 bg-rose-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shadow-md animate-pulse ring-2 ring-white"
+                                                    title={`Punto de dolor #${idx + 1}`}
+                                                >
+                                                    {idx + 1}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                     <p className="text-xs text-slate-500 mt-2 font-medium">
-                                        💡 Clic en la figura para colocar puntos de dolor numerados (Anterior y Posterior).
+                                        💡 Clic en la figura para colocar puntos de dolor numerados. Usa el zoom para mayor precisión en articulaciones pequeñas.
                                     </p>
                                 </div>
 
@@ -795,59 +904,89 @@ export const ClinicalHistoryViewer = ({
                                 </div>
 
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <Input
-                                            label="Diagnóstico Fisioterapéutico"
-                                            value={formData.comprehensivePlan.medicalDiagnosis}
-                                            disabled={isPatient}
-                                            placeholder="ej. Lumbalgia mecánica, Esguince de tobillo..."
-                                            onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, medicalDiagnosis: e.target.value } })}
-                                        />
+                                    <div className="space-y-3">
                                         <div>
-                                            <Input
-                                                label="Código CIE-10 / CIE-11"
-                                                list="cie10-options"
-                                                value={formData.comprehensivePlan.cieCode}
+                                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                                Diagnóstico Fisioterapéutico / Impresión Clínica
+                                            </label>
+                                            <textarea
+                                                value={formData.comprehensivePlan.medicalDiagnosis}
                                                 disabled={isPatient}
-                                                placeholder="Selecciona o escribe (ej. M54.5)"
-                                                onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cieCode: e.target.value } })}
+                                                placeholder="ej. Lumbalgia mecánica, Esguince de tobillo grado II con inestabilidad articular..."
+                                                rows={2}
+                                                onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, medicalDiagnosis: e.target.value } })}
+                                                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 text-sm text-slate-800 outline-none resize-y disabled:bg-slate-100 disabled:text-slate-500 leading-relaxed"
                                             />
-                                            <datalist id="cie10-options">
-                                                <option value="M54.5 - Lumbalgia no especificada" />
-                                                <option value="M54.2 - Cervicalgia" />
-                                                <option value="M75.1 - Síndrome del manguito rotador" />
-                                                <option value="M77.1 - Epicondilitis lateral (codo de tenista)" />
-                                                <option value="S93.4 - Esguince de tobillo" />
-                                                <option value="S83.5 - Esguince / lesión de ligamento cruzado de rodilla" />
-                                                <option value="M17.0 - Gonartrosis primaria bilateral" />
-                                                <option value="M72.2 - Fascitis plantar" />
-                                                <option value="G51.0 - Parálisis facial de Bell" />
-                                                <option value="M62.8 - Espasmo / contractura muscular" />
-                                                <option value="N/A - No Aplica / En Estudio" />
-                                            </datalist>
                                         </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <Input
-                                                label="Código CIF (Funcionalidad)"
-                                                list="cif-options"
-                                                value={formData.comprehensivePlan.cifCode}
-                                                disabled={isPatient}
-                                                placeholder="Selecciona o escribe (ej. b280)"
-                                                onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cifCode: e.target.value } })}
-                                            />
-                                            <datalist id="cif-options">
-                                                <option value="b28013 - Dolor de espalda / columna" />
-                                                <option value="b28016 - Dolor en articulaciones o miembros" />
-                                                <option value="b7100 - Movilidad de una sola articulación" />
-                                                <option value="b730 - Funciones de fuerza muscular" />
-                                                <option value="d450 - Andar / Marcha y deambulación" />
-                                                <option value="d410 - Cambiar las posturas corporales básicas" />
-                                                <option value="d455 - Desplazarse por el entorno / escaleras" />
-                                                <option value="s760 - Estructura del tronco / columna" />
-                                                <option value="s750 - Estructura del miembro inferior" />
-                                                <option value="s730 - Estructura de la extremidad superior" />
-                                                <option value="N/A - No Aplica / En Estudio" />
-                                            </datalist>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                                Código CIE-10 / CIE-11
+                                            </label>
+                                            <div className="space-y-1.5">
+                                                <select
+                                                    disabled={isPatient}
+                                                    onChange={(e) => {
+                                                        if (e.target.value) {
+                                                            setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cieCode: e.target.value } });
+                                                        }
+                                                    }}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                                >
+                                                    <option value="">-- Seleccionar código frecuente --</option>
+                                                    <option value="M54.5 - Lumbalgia no especificada">M54.5 - Lumbalgia no especificada</option>
+                                                    <option value="M54.2 - Cervicalgia">M54.2 - Cervicalgia</option>
+                                                    <option value="M75.1 - Síndrome del manguito rotador">M75.1 - Síndrome del manguito rotador</option>
+                                                    <option value="M77.1 - Epicondilitis lateral (codo de tenista)">M77.1 - Epicondilitis lateral</option>
+                                                    <option value="S93.4 - Esguince de tobillo">S93.4 - Esguince de tobillo</option>
+                                                    <option value="S83.5 - Esguince / lesión ligamento rodilla">S83.5 - Esguince ligamento rodilla</option>
+                                                    <option value="M17.0 - Gonartrosis primaria bilateral">M17.0 - Gonartrosis primaria</option>
+                                                    <option value="M72.2 - Fascitis plantar">M72.2 - Fascitis plantar</option>
+                                                    <option value="G51.0 - Parálisis facial de Bell">G51.0 - Parálisis facial</option>
+                                                    <option value="M62.8 - Contractura muscular">M62.8 - Contractura muscular</option>
+                                                </select>
+                                                <Input
+                                                    value={formData.comprehensivePlan.cieCode}
+                                                    disabled={isPatient}
+                                                    placeholder="Escribe o edita el código (ej. M54.5)"
+                                                    onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cieCode: e.target.value } })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                                Código CIF (Funcionalidad)
+                                            </label>
+                                            <div className="space-y-1.5">
+                                                <select
+                                                    disabled={isPatient}
+                                                    onChange={(e) => {
+                                                        if (e.target.value) {
+                                                            setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cifCode: e.target.value } });
+                                                        }
+                                                    }}
+                                                    className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                                >
+                                                    <option value="">-- Seleccionar código frecuente --</option>
+                                                    <option value="b28013 - Dolor de espalda / columna">b28013 - Dolor de espalda / columna</option>
+                                                    <option value="b28016 - Dolor en articulaciones">b28016 - Dolor en articulaciones</option>
+                                                    <option value="b7100 - Movilidad de una sola articulación">b7100 - Movilidad articular</option>
+                                                    <option value="b730 - Funciones de fuerza muscular">b730 - Funciones de fuerza muscular</option>
+                                                    <option value="d450 - Andar / Marcha y deambulación">d450 - Andar / Marcha y deambulación</option>
+                                                    <option value="d410 - Cambiar posturas corporales">d410 - Cambiar posturas corporales</option>
+                                                    <option value="d455 - Desplazarse por el entorno">d455 - Desplazarse / escaleras</option>
+                                                    <option value="s760 - Estructura de columna">s760 - Estructura de columna</option>
+                                                </select>
+                                                <Input
+                                                    value={formData.comprehensivePlan.cifCode}
+                                                    disabled={isPatient}
+                                                    placeholder="Escribe o edita el código (ej. b280)"
+                                                    onChange={(e) => setFormData({ ...formData, comprehensivePlan: { ...formData.comprehensivePlan, cifCode: e.target.value } })}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     <p className="text-[11px] text-slate-500 italic">
@@ -995,7 +1134,24 @@ export const ClinicalHistoryViewer = ({
                     <div className="bg-slate-50 px-4 sm:px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
                         <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} leftIcon={<ChevronLeft className="w-4 h-4" />}>Anterior</Button>
                         <span className="text-xs font-bold text-slate-700 bg-white px-3 py-1 rounded-full border border-slate-200">Página {currentPage} de {pages.length}</span>
-                        <Button variant="primary" size="sm" disabled={currentPage === pages.length} onClick={() => setCurrentPage((prev) => Math.min(pages.length, prev + 1))} rightIcon={<ChevronRight className="w-4 h-4" />}>Siguiente</Button>
+                        {currentPage === pages.length ? (
+                            !isPatient ? (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => handleSave(false)}
+                                    isLoading={isLoading}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"
+                                    leftIcon={<Save className="w-4 h-4 shrink-0" />}
+                                >
+                                    Guardar Historia
+                                </Button>
+                            ) : (
+                                <div className="w-20" />
+                            )
+                        ) : (
+                            <Button variant="primary" size="sm" onClick={() => setCurrentPage((prev) => Math.min(pages.length, prev + 1))} rightIcon={<ChevronRight className="w-4 h-4" />}>Siguiente</Button>
+                        )}
                     </div>
 
                 </div>

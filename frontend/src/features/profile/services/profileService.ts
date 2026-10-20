@@ -39,8 +39,8 @@ export const profileService = {
     },
 
     // Cambiar contraseña de acceso
-    changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
-        const response = await api.post<{ message: string }>('/v1/users/change-password', data);
+    changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string; token?: string }> => {
+        const response = await api.post<{ message: string; token?: string }>('/v1/users/change-password', data);
         return response.data;
     },
 

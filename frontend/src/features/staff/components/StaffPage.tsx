@@ -27,6 +27,7 @@ export const StaffPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<StaffUserDTO | null>(null);
+    const [roleFilter, setRoleFilter] = useState<string>('ALL');
     const [error, setError] = useState<string | null>(null);
 
     const fetchStaff = async () => {
@@ -50,12 +51,14 @@ export const StaffPage = () => {
         setStaff((prev) => [newMember, ...prev]);
     };
 
-    const filteredStaff = staff.filter(
-        (s) =>
+    const filteredStaff = staff.filter((s) => {
+        const matchesSearch =
             (s.fullName && s.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
             s.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+            s.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter === 'ALL' || s.roles.includes(roleFilter);
+        return matchesSearch && matchesRole;
+    });
 
     const getRoleBadge = (roles: string[]) => {
         if (roles.includes('ROLE_ADMIN')) {
@@ -109,21 +112,74 @@ export const StaffPage = () => {
                 </Button>
             </div>
 
-            {/* Tarjetas Métricas */}
+            {/* Tarjetas Métricas Clickeables (Punto 3) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-500 font-bold uppercase">Fisioterapeutas</span>
+                <div
+                    onClick={() => setRoleFilter(roleFilter === 'ROLE_FISIOTERAPEUTA' ? 'ALL' : 'ROLE_FISIOTERAPEUTA')}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer select-none ${roleFilter === 'ROLE_FISIOTERAPEUTA'
+                        ? 'bg-teal-50/80 border-teal-500 ring-2 ring-teal-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-teal-300 hover:shadow-xs'
+                        }`}
+                >
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-bold uppercase">Fisioterapeutas</span>
+                        {roleFilter === 'ROLE_FISIOTERAPEUTA' && (
+                            <span className="text-[10px] bg-teal-600 text-white font-bold px-2 py-0.5 rounded-full">Activo</span>
+                        )}
+                    </div>
                     <p className="text-2xl font-black text-teal-600 mt-1">{physiosCount}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Haz clic para ver fisioterapeutas</p>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-500 font-bold uppercase">Recepción</span>
+
+                <div
+                    onClick={() => setRoleFilter(roleFilter === 'ROLE_RECEPCION' ? 'ALL' : 'ROLE_RECEPCION')}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer select-none ${roleFilter === 'ROLE_RECEPCION'
+                        ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-xs'
+                        }`}
+                >
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-bold uppercase">Recepción</span>
+                        {roleFilter === 'ROLE_RECEPCION' && (
+                            <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full">Activo</span>
+                        )}
+                    </div>
                     <p className="text-2xl font-black text-blue-600 mt-1">{receptionCount}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Haz clic para ver recepción</p>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-500 font-bold uppercase">Administradores</span>
+
+                <div
+                    onClick={() => setRoleFilter(roleFilter === 'ROLE_ADMIN' ? 'ALL' : 'ROLE_ADMIN')}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer select-none ${roleFilter === 'ROLE_ADMIN'
+                        ? 'bg-purple-50/80 border-purple-500 ring-2 ring-purple-500/20 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-xs'
+                        }`}
+                >
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-bold uppercase">Administradores</span>
+                        {roleFilter === 'ROLE_ADMIN' && (
+                            <span className="text-[10px] bg-purple-600 text-white font-bold px-2 py-0.5 rounded-full">Activo</span>
+                        )}
+                    </div>
                     <p className="text-2xl font-black text-purple-600 mt-1">{adminsCount}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Haz clic para ver administradores</p>
                 </div>
             </div>
+
+            {/* Aviso de Filtro Activo */}
+            {roleFilter !== 'ALL' && (
+                <div className="flex items-center justify-between bg-slate-100 px-4 py-2 rounded-2xl text-xs text-slate-700">
+                    <span>
+                        Mostrando únicamente miembros con rol: <strong>{roleFilter.replace('ROLE_', '')}</strong> ({filteredStaff.length})
+                    </span>
+                    <button
+                        onClick={() => setRoleFilter('ALL')}
+                        className="text-xs font-bold text-teal-600 hover:text-teal-800 hover:underline cursor-pointer"
+                    >
+                        Mostrar Todo el Personal
+                    </button>
+                </div>
+            )}
 
             {/* Buscador */}
             <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">

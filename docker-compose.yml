@@ -37,7 +37,7 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:5173,http://localhost}
       MAIL_USERNAME: ${MAIL_USERNAME:-app.fisio420@gmail.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://appfisio.online}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://appfisio.com}
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:

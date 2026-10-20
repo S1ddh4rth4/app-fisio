@@ -18,6 +18,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final com.fisitec.appfisio.service.JwtService jwtService;
 
     /**
      * Obtiene la información completa del perfil del usuario actualmente
@@ -63,8 +64,12 @@ public class UserController {
             @Valid @RequestBody ChangePasswordDTO request,
             Authentication authentication) {
 
-        userService.changePassword(authentication.getName(), request.getCurrentPassword(), request.getNewPassword());
-        return ResponseEntity.ok(Map.of("message", "Contraseña actualizada exitosamente"));
+        User updatedUser = userService.changePassword(authentication.getName(), request.getCurrentPassword(),
+                request.getNewPassword());
+        String newToken = jwtService.generateToken(updatedUser);
+        return ResponseEntity.ok(Map.of(
+                "message", "Contraseña actualizada exitosamente",
+                "token", newToken));
     }
 
     /**

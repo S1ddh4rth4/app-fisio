@@ -22,6 +22,7 @@ public class ExercisePrescriptionService {
 
         private final ExercisePrescriptionRepository prescriptionRepository;
         private final UserRepository userRepository;
+        private final AuditService auditService;
 
         @Transactional
         public PrescriptionResponseDTO createPrescription(PrescriptionRequestDTO request,
@@ -123,14 +124,107 @@ public class ExercisePrescriptionService {
         }
 
         @Transactional
-        public PrescriptionResponseDTO updatePrescriptionStatus(String id, String status) {
+        public PrescriptionResponseDTO updatePrescriptionStatus(String id, String status,
+                        Authentication authentication) {
                 ExercisePrescription prescription = prescriptionRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException(
                                                 "Prescripción no encontrada con ID: " + id));
 
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isAuthor = prescription.getPhysiotherapist().getUsername()
+                                .equalsIgnoreCase(authentication.getName());
+
+                if (!isAdmin && !isAuthor) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para cambiar el estado de una rutina prescrita por otro fisioterapeuta.");
+                }
+
                 prescription.setStatus(status.toUpperCase());
                 ExercisePrescription updated = prescriptionRepository.save(prescription);
                 return mapToDTO(updated);
+        }
+
+        @Transactional
+        public PrescriptionResponseDTO updatePrescription(String id, PrescriptionRequestDTO request,
+                        Authentication authentication) {
+                ExercisePrescription prescription = prescriptionRepository.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Prescripción no encontrada con ID: " + id));
+
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isFisio = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
+                boolean isAuthor = prescription.getPhysiotherapist().getUsername()
+                                .equalsIgnoreCase(authentication.getName());
+
+                if (!isAdmin && (!isFisio || !isAuthor)) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para modificar una prescripción firmada por otro fisioterapeuta.");
+                }
+
+                // Si es fisioterapeuta, se registra la auditoría clínica del cambio.
+                // Si es ADMIN, no se registran datos de edición a petición de la clínica.
+                if (!isAdmin) {
+                        prescription.setEditReason(request.getEditReason() != null && !request.getEditReason().isBlank()
+                                        ? request.getEditReason()
+                                        : "Ajuste de prescripción clínica");
+                        prescription.setEditedBy(authentication.getName());
+                        prescription.setEditedAt(java.time.LocalDateTime.now());
+                }
+
+                prescription.setTitle(request.getTitle());
+                prescription.setGeneralInstructions(request.getGeneralInstructions());
+                prescription.setStartDate(request.getStartDate());
+                prescription.setEndDate(request.getEndDate());
+
+                List<ExercisePrescription.PrescriptionItem> newItems = request.getItems().stream()
+                                .map(itemDto -> ExercisePrescription.PrescriptionItem.builder()
+                                                .exerciseName(itemDto.getExerciseName())
+                                                .sets(itemDto.getSets())
+                                                .repetitions(itemDto.getRepetitions())
+                                                .frequency(itemDto.getFrequency())
+                                                .notes(itemDto.getNotes())
+                                                .videoUrl(itemDto.getVideoUrl())
+                                                .build())
+                                .collect(Collectors.toList());
+
+                prescription.getItems().clear();
+                prescription.getItems().addAll(newItems);
+
+                ExercisePrescription updated = prescriptionRepository.save(prescription);
+                return mapToDTO(updated);
+        }
+
+        @Transactional
+        public void deletePrescription(String id, Authentication authentication) {
+                ExercisePrescription prescription = prescriptionRepository.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Prescripción no encontrada con ID: " + id));
+
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isFisio = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_FISIOTERAPEUTA"));
+                boolean isAuthor = prescription.getPhysiotherapist().getUsername()
+                                .equalsIgnoreCase(authentication.getName());
+
+                if (!isAdmin && (!isFisio || !isAuthor)) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para eliminar una prescripción firmada por otro fisioterapeuta.");
+                }
+
+                String targetPatientId = prescription.getPatient() != null ? prescription.getPatient().getId() : "N/A";
+                String title = prescription.getTitle();
+
+                prescriptionRepository.delete(prescription);
+
+                auditService.logAction(
+                                authentication.getName(),
+                                "DELETE_PRESCRIPTION",
+                                targetPatientId,
+                                "Eliminó la prescripción de ejercicios ID=" + id + " ('" + title + "')");
         }
 
         private User findUserByIdOrUsername(String identifier) {
@@ -175,6 +269,9 @@ public class ExercisePrescriptionService {
                                 .endDate(p.getEndDate())
                                 .status(p.getStatus())
                                 .items(itemsDto)
+                                .editReason(p.getEditReason())
+                                .editedBy(p.getEditedBy())
+                                .editedAt(p.getEditedAt())
                                 .createdAt(p.getCreatedAt())
                                 .updatedAt(p.getUpdatedAt())
                                 .build();

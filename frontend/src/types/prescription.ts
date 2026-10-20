@@ -13,6 +13,7 @@ export interface PrescriptionRequestDTO {
     generalInstructions?: string;
     startDate: string;
     endDate?: string;
+    editReason?: string;
     items: PrescriptionItemDTO[];
 }
 
@@ -28,6 +29,9 @@ export interface PrescriptionResponseDTO {
     endDate?: string;
     status: 'ACTIVA' | 'COMPLETADA' | 'PAUSADA' | 'CANCELADA';
     items: PrescriptionItemDTO[];
+    editReason?: string;
+    editedBy?: string;
+    editedAt?: string;
     createdAt: string;
     updatedAt: string;
 }

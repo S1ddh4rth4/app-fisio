@@ -92,16 +92,36 @@ public class AppointmentController {
     @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
     public ResponseEntity<AppointmentResponseDTO> updateNotes(
             @PathVariable Long id,
-            @RequestBody java.util.Map<String, String> body) {
-        return ResponseEntity.ok(appointmentService.saveClinicalNotes(id, body.get("notes")));
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication) {
+        return ResponseEntity.ok(appointmentService.saveClinicalNotes(id, body.get("notes"), authentication));
     }
 
     @PatchMapping("/{id}/pay")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'FISIOTERAPEUTA')")
     public ResponseEntity<AppointmentResponseDTO> processPayment(
             @PathVariable Long id,
-            @RequestBody java.util.Map<String, String> body) {
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication) {
         return ResponseEntity.ok(
-                appointmentService.processPayment(id, body.get("treatmentId"), body.get("paymentMethod")));
+                appointmentService.processPayment(id, body.get("treatmentId"), body.get("paymentMethod"),
+                        authentication));
+    }
+
+    @PatchMapping("/{id}/revert-payment")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'FISIOTERAPEUTA')")
+    public ResponseEntity<AppointmentResponseDTO> revertPayment(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(appointmentService.revertPayment(id, authentication));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'FISIOTERAPEUTA', 'PACIENTE')")
+    public ResponseEntity<Void> cancelAppointment(
+            @PathVariable Long id,
+            Authentication authentication) {
+        appointmentService.cancelAppointment(id, authentication);
+        return ResponseEntity.noContent().build();
     }
 }

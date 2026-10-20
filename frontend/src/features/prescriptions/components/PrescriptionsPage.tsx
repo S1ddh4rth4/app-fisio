@@ -13,7 +13,11 @@ import {
     AlertCircle,
     Loader2,
     ExternalLink,
-    CheckCircle2
+    CheckCircle2,
+    Pencil,
+    Trash2,
+    Filter,
+    ShieldAlert
 } from 'lucide-react';
 
 export const PrescriptionsPage = () => {
@@ -24,6 +28,8 @@ export const PrescriptionsPage = () => {
     const [prescriptions, setPrescriptions] = useState<PrescriptionResponseDTO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPrescription, setEditingPrescription] = useState<PrescriptionResponseDTO | null>(null);
+    const [selectedPatientFilter, setSelectedPatientFilter] = useState<string>('ALL');
     const [error, setError] = useState<string | null>(null);
 
     const fetchPrescriptions = async () => {
@@ -45,9 +51,38 @@ export const PrescriptionsPage = () => {
         fetchPrescriptions();
     }, [isPatient, user?.username]);
 
-    const handleCreated = (newPres: PrescriptionResponseDTO) => {
-        setPrescriptions((prev) => [newPres, ...prev]);
+    const handleSaved = (saved: PrescriptionResponseDTO) => {
+        setPrescriptions((prev) => {
+            const exists = prev.some(p => p.id === saved.id);
+            if (exists) {
+                return prev.map(p => p.id === saved.id ? saved : p);
+            }
+            return [saved, ...prev];
+        });
+        setEditingPrescription(null);
     };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta prescripción de ejercicios? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        try {
+            await prescriptionService.delete(id);
+            setPrescriptions(prev => prev.filter(p => p.id !== id));
+        } catch {
+            alert('Error al eliminar la prescripción.');
+        }
+    };
+
+    // Pacientes únicos para el filtro
+    const uniquePatients = Array.from(
+        new Set(prescriptions.map(p => p.patientName))
+    );
+
+    // Prescripciones filtradas
+    const filteredPrescriptions = selectedPatientFilter === 'ALL'
+        ? prescriptions
+        : prescriptions.filter(p => p.patientName === selectedPatientFilter);
 
     const handleToggleStatus = async (id: string, currentStatus: string) => {
         const nextStatus = currentStatus === 'ACTIVA' ? 'COMPLETADA' : 'ACTIVA';
@@ -130,13 +165,38 @@ export const PrescriptionsPage = () => {
             ) : (
                 /* Lista de Tarjetas de Prescripciones */
                 <div className="space-y-4">
-                    {prescriptions.map((pres) => (
+                    {/* Barra de Filtro de Paciente (Punto 15) */}
+                    {isStaff && uniquePatients.length > 0 && (
+                        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <Filter className="w-4 h-4 text-teal-600" />
+                                <span className="text-xs font-bold text-slate-700 uppercase">Organizar por Paciente:</span>
+                            </div>
+                            <select
+                                value={selectedPatientFilter}
+                                onChange={(e) => setSelectedPatientFilter(e.target.value)}
+                                className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                            >
+                                <option value="ALL">Mostrar Todos ({prescriptions.length} rutinas)</option>
+                                {uniquePatients.map((pName) => {
+                                    const count = prescriptions.filter(p => p.patientName === pName).length;
+                                    return (
+                                        <option key={pName} value={pName}>
+                                            {pName} ({count} {count === 1 ? 'rutina' : 'rutinas'})
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                    )}
+
+                    {filteredPrescriptions.map((pres) => (
                         <div
                             key={pres.id}
                             className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-teal-300 shadow-xs transition-all space-y-4"
                         >
                             {/* Cabecera de la Prescripción */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-lg font-extrabold text-slate-900">{pres.title}</h3>
@@ -166,15 +226,49 @@ export const PrescriptionsPage = () => {
                                 </div>
 
                                 {isStaff && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleToggleStatus(pres.id, pres.status)}
-                                    >
-                                        Marcar como {pres.status === 'ACTIVA' ? 'Completada' : 'Activa'}
-                                    </Button>
+                                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs text-slate-700"
+                                            onClick={() => {
+                                                setEditingPrescription(pres);
+                                                setIsModalOpen(true);
+                                            }}
+                                            leftIcon={<Pencil className="w-3.5 h-3.5 text-slate-600" />}
+                                        >
+                                            Editar
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+                                            onClick={() => handleDelete(pres.id)}
+                                            leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-600" />}
+                                        >
+                                            Borrar
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleToggleStatus(pres.id, pres.status)}
+                                        >
+                                            {pres.status === 'ACTIVA' ? 'Completar' : 'Activar'}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
+
+                            {/* Insignia de Auditoría Médica (Punto 9) */}
+                            {pres.editReason && pres.editedBy && (
+                                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
+                                    <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <span className="font-bold">Modificación Médica Registrada</span> (por {pres.editedBy} {pres.editedAt ? `el ${new Date(pres.editedAt).toLocaleDateString('es-MX')}` : ''}):
+                                        <p className="italic text-amber-800 mt-0.5">"{pres.editReason}"</p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Instrucciones generales */}
                             {pres.generalInstructions && (
@@ -238,11 +332,15 @@ export const PrescriptionsPage = () => {
                 </div>
             )}
 
-            {/* Modal para Crear Prescripción */}
+            {/* Modal para Crear o Editar Prescripción */}
             <PrescriptionModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={handleCreated}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingPrescription(null);
+                }}
+                onSuccess={handleSaved}
+                initialData={editingPrescription}
             />
         </div>
     );

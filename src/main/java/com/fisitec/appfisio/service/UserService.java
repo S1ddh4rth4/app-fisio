@@ -215,7 +215,7 @@ public class UserService {
     /**
      * Permite a un usuario cambiar su contraseña tras validar su contraseña actual.
      */
-    public void changePassword(String username, String currentPassword, String newPassword) {
+    public User changePassword(String username, String currentPassword, String newPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -229,10 +229,13 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
+        if (user.getPrivacyPolicyAcceptedAt() == null) {
+            user.setPrivacyPolicyAcceptedAt(java.time.LocalDateTime.now());
+        }
         // Revocación inmediata: incrementamos la versión para expulsar sesiones en
         // otros dispositivos
         user.setTokenVersion(user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 1);
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
     /**

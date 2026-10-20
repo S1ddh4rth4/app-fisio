@@ -9,16 +9,17 @@ import { PrescriptionModal } from '../../prescriptions/components/PrescriptionMo
 import type { AppointmentResponseDTO } from '../../../types/appointment';
 import type { TreatmentResponseDTO } from '../../../types/treatment';
 import type { PatientPackageResponseDTO } from '../../../types/payment';
-import { X, FileText, DollarSign, CalendarDays, CheckCircle2, User, Activity, AlertCircle, Package, Dumbbell } from 'lucide-react';
+import { X, FileText, DollarSign, CalendarDays, CheckCircle2, User, Activity, AlertCircle, Package, Dumbbell, Trash2 } from 'lucide-react';
 
 interface AppointmentDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     appointment: AppointmentResponseDTO | null;
     onUpdate: (updatedAppointment: AppointmentResponseDTO) => void;
+    onDelete?: (deletedId: number) => void;
 }
 
-export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate }: AppointmentDetailsModalProps) => {
+export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate, onDelete }: AppointmentDetailsModalProps) => {
     const [activeTab, setActiveTab] = useState<'RESUMEN' | 'EVOLUCION' | 'CAJA'>('RESUMEN');
 
     // Estados para Notas y Adendas
@@ -148,7 +149,7 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
         try {
             const updated = await appointmentService.processPayment(appointment.id, selectedTreatmentId, paymentMethod);
             onUpdate(updated);
-            setActiveTab('RESUMEN'); // Volver al resumen tras cobrar
+            setActiveTab('CAJA'); // Permanecer en Caja para mostrar de inmediato el recibo y estado Pagado
         } catch (err: any) {
             setError('Error al procesar el pago.');
         } finally {
@@ -174,11 +175,62 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                 patientPackageId: selectedPackageId,
             });
             onUpdate(updated);
-            // Actualizar la cita local y pasar a la pestaña resumen para que la caja quede sellada
-            appointment.paymentStatus = 'PAGADO';
-            setActiveTab('RESUMEN');
+            setActiveTab('CAJA');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Error al descontar sesión del paquete.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRevertPayment = async () => {
+        if (!window.confirm('¿Deseas revertir el cobro de esta sesión para corregirlo? Si se descontó de un paquete, la sesión será devuelta al saldo del paciente.')) {
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const updated = await appointmentService.revertPayment(appointment.id);
+            onUpdate(updated);
+
+            // Recargar paquetes activos por si se devolvió una sesión al paquete del paciente
+            const targetPatient = appointment.patientId || appointment.patientName;
+            if (targetPatient) {
+                paymentService.getPatientPackages(targetPatient).then(pkgs => {
+                    const currentPatientName = (appointment.patientName || '').toLowerCase().trim();
+                    const currentPatientId = (appointment.patientId || '').toLowerCase().trim();
+                    const actives = pkgs.filter(p => {
+                        const pkgPatientName = (p.patientUsername || '').toLowerCase().trim();
+                        const pkgPatientId = (p.patientId || '').toLowerCase().trim();
+                        const isSamePatient = (pkgPatientId && pkgPatientId === currentPatientId) ||
+                            (pkgPatientName && pkgPatientName === currentPatientName);
+                        return p.status === 'ACTIVO' && p.remainingSessions > 0 && isSamePatient;
+                    });
+                    setPatientPackages(actives);
+                    if (actives.length > 0) {
+                        setSelectedPackageId(actives[0].id);
+                    }
+                }).catch(() => { });
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Error al revertir el cobro de la sesión.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancelAppointment = async () => {
+        if (!window.confirm('¿Estás seguro de cancelar esta cita? El horario quedará libre inmediatamente en la agenda.')) {
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            await appointmentService.cancelAppointment(appointment.id);
+            onDelete?.(appointment.id);
+            onClose();
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'No se pudo cancelar la cita.');
         } finally {
             setIsLoading(false);
         }
@@ -253,17 +305,31 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                                 </div>
 
                                 {/* Botón Todo en Uno: Consultar o Llenar Historia Clínica sin salir de la cita */}
-                                <div className="pt-2 border-t border-indigo-200/60 flex items-center justify-between">
+                                <div className="pt-2 border-t border-indigo-200/60 flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-xs text-indigo-800 font-semibold">Expediente Clínico del Paciente:</span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs bg-white text-teal-700 border-teal-300 hover:bg-teal-50"
-                                        onClick={() => setIsHistoryOpen(true)}
-                                        leftIcon={<FileText className="w-3.5 h-3.5" />}
-                                    >
-                                        Abrir Historia Clínica
-                                    </Button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {appointment.paymentStatus !== 'PAGADO' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs bg-white text-rose-600 border-rose-200 hover:bg-rose-50"
+                                                onClick={handleCancelAppointment}
+                                                isLoading={isLoading}
+                                                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                                            >
+                                                Cancelar Cita y Liberar Horario
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs bg-white text-teal-700 border-teal-300 hover:bg-teal-50"
+                                            onClick={() => setIsHistoryOpen(true)}
+                                            leftIcon={<FileText className="w-3.5 h-3.5" />}
+                                        >
+                                            Abrir Historia Clínica
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -272,12 +338,12 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                     {/* PESTAÑA 2: EVOLUCIÓN */}
                     {activeTab === 'EVOLUCION' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full">
-                            <div className="flex items-center justify-between pb-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
                                 <div>
                                     <label className="block text-sm font-bold text-slate-900">Notas Clínicas de la Sesión</label>
                                     <p className="text-xs text-slate-500">Registra el avance de la sesión actual o consulta su expediente completo.</p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     {appointment.status === 'COMPLETED' && (
                                         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                                             Expediente Sellado
@@ -289,7 +355,7 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                                         size="sm"
                                         className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                                         onClick={() => setIsPrescriptionModalOpen(true)}
-                                        leftIcon={<Dumbbell className="w-3.5 h-3.5 text-indigo-600" />}
+                                        leftIcon={<Dumbbell className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
                                     >
                                         + Prescribir Ejercicios
                                     </Button>
@@ -299,7 +365,7 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                                         size="sm"
                                         className="text-xs bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100"
                                         onClick={() => setIsHistoryOpen(true)}
-                                        leftIcon={<FileText className="w-3.5 h-3.5" />}
+                                        leftIcon={<FileText className="w-3.5 h-3.5 shrink-0" />}
                                     >
                                         Historia Clínica Completa
                                     </Button>
@@ -368,18 +434,24 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Describe la evolución del paciente, ejercicios realizados, dolor manifestado..."
-                                        className="w-full flex-1 min-h-[200px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all resize-none text-slate-700"
+                                        className="w-full flex-1 min-h-[240px] sm:min-h-[280px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all resize-y text-slate-700 leading-relaxed text-sm"
                                     />
-                                    <div className="flex items-center justify-between pt-1">
+                                    <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-2">
                                         <button
                                             type="button"
                                             onClick={() => setIsHistoryOpen(true)}
-                                            className="text-xs font-bold text-teal-600 hover:text-teal-800 hover:underline flex items-center gap-1.5"
+                                            className="text-xs font-bold text-teal-600 hover:text-teal-800 hover:underline flex items-center justify-center sm:justify-start gap-1.5 py-1"
                                         >
-                                            <FileText className="w-3.5 h-3.5" />
+                                            <FileText className="w-3.5 h-3.5 shrink-0" />
                                             Reevaluar en Historia Clínica (7 páginas, mapa y dolor)
                                         </button>
-                                        <Button variant="primary" onClick={handleSaveNotes} isLoading={isLoading} leftIcon={<CheckCircle2 className="w-4 h-4" />}>
+                                        <Button
+                                            variant="primary"
+                                            onClick={handleSaveNotes}
+                                            isLoading={isLoading}
+                                            leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                                            className="w-full sm:w-auto"
+                                        >
                                             Guardar Nota Clínica
                                         </Button>
                                     </div>
@@ -397,9 +469,24 @@ export const AppointmentDetailsModal = ({ isOpen, onClose, appointment, onUpdate
                                         <CheckCircle2 className="w-8 h-8" />
                                     </div>
                                     <h3 className="text-xl font-bold text-emerald-800 mb-1">¡Esta sesión ya está pagada!</h3>
-                                    <p className="text-emerald-600 font-medium">Tratamiento: {appointment.treatmentName}</p>
+                                    <p className="text-emerald-600 font-medium">
+                                        {appointment.packageName
+                                            ? `Paquete: ${appointment.packageName}`
+                                            : `Tratamiento: ${appointment.treatmentName || 'Atención Fisioterapéutica'}`}
+                                    </p>
                                     <p className="text-emerald-600 font-medium">Método: {appointment.paymentMethod}</p>
-                                    <p className="text-emerald-700 font-extrabold mt-2 text-2xl">${appointment.paymentAmount} MXN</p>
+                                    <p className="text-emerald-700 font-extrabold mt-2 text-2xl">${appointment.paymentAmount ?? 0} MXN</p>
+
+                                    <div className="mt-6 pt-4 border-t border-emerald-200/70 w-full flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={handleRevertPayment}
+                                            disabled={isLoading}
+                                            className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-white hover:bg-rose-50 border border-rose-200 px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
+                                        >
+                                            Revertir / Corregir Cobro por Error
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <>

@@ -69,11 +69,16 @@ public class TreatmentService {
             // Aislamiento: El fisioterapeuta solo ve su propio catálogo
             list = treatmentRepository.findByPhysiotherapist(currentUser);
         } else if (isPatient) {
-            // Aislamiento: El paciente solo ve los tratamientos de su fisio de cabecera
+            // Aislamiento con Fallback: El paciente ve los tratamientos de su fisio de
+            // cabecera
+            // o el catálogo general de la clínica si aún no tiene fisio asignado
             if (currentUser.getPrimaryPhysio() != null) {
                 list = treatmentRepository.findByPhysiotherapist(currentUser.getPrimaryPhysio());
+                if (list.isEmpty()) {
+                    list = treatmentRepository.findAll();
+                }
             } else {
-                list = List.of();
+                list = treatmentRepository.findAll();
             }
         } else {
             // Admin y Recepción supervisan toda la clínica
@@ -157,12 +162,24 @@ public class TreatmentService {
 
     // Método de utilidad privado para no repetir código al mapear
     private TreatmentResponseDTO mapToDTO(Treatment treatment) {
+        String physioName = "General (Clínica)";
+        String physioId = null;
+        if (treatment.getPhysiotherapist() != null) {
+            physioId = treatment.getPhysiotherapist().getId();
+            physioName = (treatment.getPhysiotherapist().getFullName() != null
+                    && !treatment.getPhysiotherapist().getFullName().isBlank())
+                            ? treatment.getPhysiotherapist().getFullName()
+                            : treatment.getPhysiotherapist().getUsername();
+        }
+
         return TreatmentResponseDTO.builder()
                 .id(treatment.getId())
                 .name(treatment.getName())
                 .description(treatment.getDescription())
                 .durationMinutes(treatment.getDurationMinutes())
                 .price(treatment.getPrice())
+                .physiotherapistId(physioId)
+                .physiotherapistName(physioName)
                 .build();
     }
 }

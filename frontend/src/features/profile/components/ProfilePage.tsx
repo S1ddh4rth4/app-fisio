@@ -17,12 +17,15 @@ import {
     X,
     Save,
     ShieldCheck,
-    Smartphone
+    Smartphone,
+    FileText
 } from 'lucide-react';
+import { PrivacyPolicyModal } from '../../patients/components/PrivacyPolicyModal';
 
 export const ProfilePage = () => {
     const { user, hasRole, logout } = useAuth();
     const isHealthStaff = hasRole('ROLE_FISIOTERAPEUTA') || hasRole('ROLE_ADMIN');
+    const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
     // Estado del Perfil
     const [fullName, setFullName] = useState('');
@@ -583,6 +586,44 @@ export const ProfilePage = () => {
                     )}
                 </div>
             )}
+
+            {/* Tarjeta Permanente: Aviso de Privacidad y Protección de Datos (Visible para Pacientes y Personal) */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                    <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl border border-teal-100 shrink-0">
+                        <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Aviso de Privacidad y Protección de Datos
+                            </h2>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Consentimiento Activo
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                            Tus datos personales y expediente clínico están protegidos bajo cifrado AES-256. Puedes consultar en cualquier momento nuestro Aviso de Privacidad Integral y tus derechos ARCO.
+                        </p>
+                    </div>
+                </div>
+
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-teal-700 border-teal-200 hover:bg-teal-50"
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    leftIcon={<ShieldCheck className="w-4 h-4 text-teal-600" />}
+                >
+                    Leer Aviso de Privacidad
+                </Button>
+            </div>
+
+            <PrivacyPolicyModal
+                isOpen={isPrivacyModalOpen}
+                onClose={() => setIsPrivacyModalOpen(false)}
+            />
         </div>
     );
 };

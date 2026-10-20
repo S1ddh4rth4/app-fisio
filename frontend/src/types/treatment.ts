@@ -4,6 +4,8 @@ export interface TreatmentResponseDTO {
     description: string;
     durationMinutes: number;
     price: number;
+    physiotherapistId?: string;
+    physiotherapistName?: string;
 }
 
 export interface TreatmentRequestDTO {

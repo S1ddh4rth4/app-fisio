@@ -111,6 +111,16 @@ public class JwtService {
         return generateToken(userDetails, 1);
     }
 
+    /**
+     * Sobrecarga para emitir el token directamente con la entidad User y su
+     * tokenVersion activa
+     */
+    public String generateToken(com.fisitec.appfisio.entity.User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenVersion", user.getTokenVersion() != null ? user.getTokenVersion() : 1);
+        return createToken(claims, user.getUsername());
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)

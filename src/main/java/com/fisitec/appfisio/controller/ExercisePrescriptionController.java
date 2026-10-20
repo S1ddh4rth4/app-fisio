@@ -79,8 +79,29 @@ public class ExercisePrescriptionController {
     @Operation(summary = "Actualizar estado de la rutina (ACTIVA, COMPLETADA, CANCELADA)")
     public ResponseEntity<PrescriptionResponseDTO> updateStatus(
             @PathVariable String id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
         String status = body.getOrDefault("status", "ACTIVA");
-        return ResponseEntity.ok(prescriptionService.updatePrescriptionStatus(id, status));
+        return ResponseEntity.ok(prescriptionService.updatePrescriptionStatus(id, status, authentication));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
+    @Operation(summary = "Editar una prescripción de ejercicios existente con auditoría clínica")
+    public ResponseEntity<PrescriptionResponseDTO> updatePrescription(
+            @PathVariable String id,
+            @Valid @RequestBody PrescriptionRequestDTO request,
+            Authentication authentication) {
+        return ResponseEntity.ok(prescriptionService.updatePrescription(id, request, authentication));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FISIOTERAPEUTA')")
+    @Operation(summary = "Eliminar una prescripción de ejercicios")
+    public ResponseEntity<Void> deletePrescription(
+            @PathVariable String id,
+            Authentication authentication) {
+        prescriptionService.deletePrescription(id, authentication);
+        return ResponseEntity.noContent().build();
     }
 }

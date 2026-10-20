@@ -86,6 +86,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
+                // Candado de seguridad: Si el usuario tiene contraseña temporal
+                // (mustChangePassword),
+                // solo puede consultar su perfil (/api/v1/users/me) o cambiar su contraseña
+                // (/api/v1/users/change-password)
+                String requestUri = request.getRequestURI();
+                if (Boolean.TRUE.equals(user.getMustChangePassword())
+                        && !requestUri.equals("/api/v1/users/change-password")
+                        && !requestUri.equals("/api/v1/users/me")) {
+                    logger.warn("Acceso bloqueado para " + username
+                            + ": requiere cambio obligatorio de contraseña temporal.");
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write(
+                            "{\"message\":\"Debes cambiar tu contraseña temporal antes de acceder al sistema.\"}");
+                    return;
+                }
+
                 UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                         .username(user.getUsername())
                         .password(user.getPassword())
