@@ -45,9 +45,6 @@ export const PrescriptionModal = ({
             patientService.getAll().then(data => {
                 const activePatients = data.filter(p => p.enabled);
                 setPatientsList(activePatients);
-                if (!isEditing && activePatients.length > 0 && !patientIdentifier) {
-                    setPatientIdentifier(activePatients[0].username);
-                }
             }).catch(() => { });
 
             if (initialData) {

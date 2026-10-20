@@ -104,9 +104,10 @@ public class PatientService {
         public com.fisitec.appfisio.dto.PatientRegistrationResponseDTO registerPatient(
                         PatientRegisterRequestDTO request,
                         String currentUsername) {
-                if (userRepository.existsByEmail(request.getEmail())) {
+                String normalizedEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+                if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
                         throw new IllegalArgumentException(
-                                        "Ya existe un paciente registrado con el correo: " + request.getEmail());
+                                        "Ya existe un usuario registrado con el correo: " + normalizedEmail);
                 }
 
                 // Buscar al usuario que está registrando al paciente
@@ -128,8 +129,8 @@ public class PatientService {
                 String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5);
                 String initialPassword = "App-" + randomSuffix;
 
-                // Crear al paciente
-                User newPatient = userService.createUser(generatedUsername, request.getEmail(), initialPassword,
+                // Crear al paciente con el correo normalizado en minúsculas
+                User newPatient = userService.createUser(generatedUsername, normalizedEmail, initialPassword,
                                 "ROLE_PACIENTE");
 
                 // Guardar nombre completo del paciente y asignarlo a la cartera de su Fisio

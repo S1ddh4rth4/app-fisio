@@ -75,9 +75,6 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
             // Filtramos a los pacientes eliminados o inactivos
             const activePatients = data.filter(p => p.enabled);
             setPatientsList(activePatients);
-            if (activePatients.length > 0 && !patientId) {
-                setPatientId(activePatients[0].username);
-            }
         }).catch(() => { });
     };
 
@@ -122,6 +119,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
             if (isPatient) {
                 setPatientId(user?.username || '');
             } else {
+                setPatientId('');
                 loadPatients();
             }
         }
@@ -131,6 +129,9 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
 
     const handleClose = () => {
         setErrorMsg(null);
+        if (!isPatient) {
+            setPatientId('');
+        }
         setSelectedDate('');      // Limpiamos la fecha nueva
         setSelectedTime('09:00'); // Reiniciamos la hora
         setReason('');

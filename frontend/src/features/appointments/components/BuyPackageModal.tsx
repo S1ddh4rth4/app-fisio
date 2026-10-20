@@ -26,12 +26,10 @@ export const BuyPackageModal = ({
 
     useEffect(() => {
         if (isOpen) {
+            setPatientIdentifier('');
             patientService.getAll().then(data => {
                 const activePatients = data.filter(p => p.enabled);
                 setPatientsList(activePatients);
-                if (activePatients.length > 0) {
-                    setPatientIdentifier(activePatients[0].username);
-                }
             }).catch(() => { });
         }
     }, [isOpen]);

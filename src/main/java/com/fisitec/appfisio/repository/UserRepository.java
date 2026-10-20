@@ -35,6 +35,8 @@ public interface UserRepository extends JpaRepository<User, String> {
      */
     boolean existsByEmail(String email);
 
+    boolean existsByEmailIgnoreCase(String email);
+
     /**
      * Obtiene todos los usuarios que posean un rol específico (ej. ROLE_PACIENTE,
      * ROLE_FISIOTERAPEUTA).

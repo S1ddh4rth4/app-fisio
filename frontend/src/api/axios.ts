@@ -19,4 +19,19 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+// Interceptor de respuesta: Si la sesión expiró o el token fue revocado (401),
+// cerrar sesión limpiamente para evitar pantallas con errores de carga
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+        if (error.response?.status === 401 && !isLoginRequest) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;

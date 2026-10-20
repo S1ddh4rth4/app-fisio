@@ -160,6 +160,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                         <Input
                             label="Nombre Completo del Paciente"
                             required
+                            autoComplete="off"
                             placeholder="ej. Laura López"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
@@ -171,9 +172,10 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                             label="Correo Electrónico"
                             type="email"
                             required
+                            autoComplete="off"
                             placeholder="ej. laura.lopez@gmail.com"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => setEmail(e.target.value.trim())}
                             leftIcon={<Mail className="w-5 h-5 text-slate-400" />}
                             helperText="El paciente podrá ingresar al sistema con este correo"
                         />
