@@ -33,6 +33,13 @@ public class EmailService {
   @Value("${app.frontend.url:https://appfisio.com}")
   private String frontendUrl;
 
+  private String getFrontendUrl() {
+    if (frontendUrl == null || frontendUrl.isBlank()) {
+      return "https://appfisio.com";
+    }
+    return frontendUrl.replace("appfisio.online", "appfisio.com");
+  }
+
   /**
    * Envía en segundo plano (@Async) el correo de bienvenida con las credenciales
    * temporales al registrar un Paciente o un Fisioterapeuta/Staff.
@@ -81,7 +88,7 @@ public class EmailService {
 
           © AppFisio — Portal Clínico
           """
-          .formatted(greetingName, friendlyRole, username, toEmail, temporaryPassword, frontendUrl);
+          .formatted(greetingName, friendlyRole, username, toEmail, temporaryPassword, getFrontendUrl());
 
       String htmlText = buildWelcomeHtml(greetingName, username, toEmail, temporaryPassword, friendlyRole);
 
@@ -154,7 +161,7 @@ public class EmailService {
         </html>
         """
         .formatted(escapeHtml(friendlyRole), escapeHtml(greetingName), escapeHtml(username), escapeHtml(email),
-            escapeHtml(temporaryPassword), frontendUrl);
+            escapeHtml(temporaryPassword), getFrontendUrl());
   }
 
   /**
@@ -218,7 +225,7 @@ public class EmailService {
                     <strong style="font-size:13px;display:block;margin-bottom:6px;">⚠️ Recomendación Importante de Vestimenta:</strong>
                     Para poder realizar tu valoración funcional y aplicar las técnicas fisioterapéuticas con total comodidad, te solicitamos acudir con <strong>ropa cómoda u holgada</strong>:
                     <ul style="margin:8px 0 0;padding-left:20px;">
-                      <li><strong>Zona inferior y columna:</strong> Short deportivo, mayón o leggings.</li>
+                      <li><strong>Zona inferior y columna:</strong> Short deportivo (indispensable acudir en short).</li>
                       <li><strong>Zona superior y cuello:</strong> Top deportivo, blusa o playera de tirantes / manga corta.</li>
                       <li>Calzado cómodo o tenis.</li>
                     </ul>
@@ -238,12 +245,12 @@ public class EmailService {
             </html>
             """
             .formatted(escapeHtml(patientName), escapeHtml(formattedDate), escapeHtml(physioName),
-                escapeHtml(appt.getAppointmentType()), frontendUrl);
+                escapeHtml(appt.getAppointmentType()), getFrontendUrl());
 
         String plainTextPatient = "¡Hola, " + patientName + "!\n\nTu cita en AppFisio está confirmada para el "
             + formattedDate + " con " + physioName
-            + ".\n\nRecomendación importante: Asistir con ropa cómoda u holgada (short, mayón, blusa o playera de tirantes).\n\nIngresa a: "
-            + frontendUrl;
+            + ".\n\nRecomendación importante: Asistir con ropa cómoda u holgada (indispensable acudir en short deportivo, y blusa o playera de tirantes).\n\nIngresa a: "
+            + getFrontendUrl();
         msg.addHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
         msg.addHeader("Auto-Submitted", "auto-generated");
         helper.setText(plainTextPatient, htmlPatient);
@@ -290,7 +297,7 @@ public class EmailService {
             """
             .formatted(escapeHtml(physioName), escapeHtml(patientName), escapeHtml(formattedDate),
                 escapeHtml(appt.getAppointmentType()),
-                escapeHtml(appt.getReason() != null ? appt.getReason() : "Consulta"), frontendUrl);
+                escapeHtml(appt.getReason() != null ? appt.getReason() : "Consulta"), getFrontendUrl());
 
         helper.setText(htmlPhysio, true);
         mailSender.send(msg);
@@ -354,7 +361,7 @@ public class EmailService {
 
       String plainTextSummary = "¡Hola, " + patientName + "!\n\nResumen de tu sesión de hoy (" + formattedDate
           + "):\nTratamiento: " + treatmentName + " (" + duration + ")\nTotal pagado: " + amountPaid + " ("
-          + paymentMethod + ")\nNotas de la sesión: " + notes + "\n\nConsulta tus ejercicios en: " + frontendUrl
+          + paymentMethod + ")\nNotas de la sesión: " + notes + "\n\nConsulta tus ejercicios en: " + getFrontendUrl()
           + "/prescriptions";
       msg.addHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
       msg.addHeader("Auto-Submitted", "auto-generated");
@@ -398,7 +405,7 @@ public class EmailService {
           """
           .formatted(escapeHtml(patientName), escapeHtml(formattedDate), escapeHtml(treatmentName),
               escapeHtml(duration), escapeHtml(physioName), escapeHtml(amountPaid), escapeHtml(paymentMethod),
-              escapeHtml(notes), frontendUrl);
+              escapeHtml(notes), getFrontendUrl());
 
       helper.setText(plainTextSummary, html);
       mailSender.send(msg);
