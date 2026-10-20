@@ -49,6 +49,21 @@ public class UserDTO {
     private String avatarUrl;
 
     /**
+     * Identificador del fisioterapeuta de cabecera asignado.
+     */
+    private String primaryPhysioId;
+
+    /**
+     * Username del fisioterapeuta de cabecera asignado.
+     */
+    private String primaryPhysioUsername;
+
+    /**
+     * Nombre visible del fisioterapeuta de cabecera asignado.
+     */
+    private String primaryPhysioName;
+
+    /**
      * Conjunto de roles de seguridad asignados en el sistema.
      */
     private Set<String> roles;

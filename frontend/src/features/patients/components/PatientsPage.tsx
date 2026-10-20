@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { patientService } from '../services/patientService';
+import { appointmentService } from '../../appointments/services/appointmentService';
 import { PatientModal } from './PatientModal';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -20,16 +21,23 @@ import {
     Phone,
     KeyRound,
     CheckCircle2,
-    User
+    User,
+    Stethoscope
 } from 'lucide-react';
 
 export const PatientsPage = () => {
     const navigate = useNavigate();
     const { hasRole } = useAuth();
     const isStaff = hasRole('ROLE_ADMIN') || hasRole('ROLE_FISIOTERAPEUTA') || hasRole('ROLE_RECEPCION');
+    const isAdmin = hasRole('ROLE_ADMIN');
+    const isAdminOrReception = isAdmin || hasRole('ROLE_RECEPCION');
     const [patients, setPatients] = useState<PatientDTO[]>([]);
+    const [professionals, setProfessionals] = useState<any[]>([]);
     const [selectedPatient, setSelectedPatient] = useState<PatientDTO | null>(null);
+    const [reassignPhysioUsername, setReassignPhysioUsername] = useState('');
+    const [isReassigning, setIsReassigning] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedPhysioFilter, setSelectedPhysioFilter] = useState('ALL');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -49,19 +57,46 @@ export const PatientsPage = () => {
 
     useEffect(() => {
         fetchPatients();
-    }, []);
+        if (isAdminOrReception) {
+            appointmentService.getProfessionals()
+                .then(setProfessionals)
+                .catch(() => setProfessionals([]));
+        }
+    }, [isAdminOrReception]);
 
-    const handleCreated = (newPatient: any) => {
-        // Al registrarse un paciente, forzamos visualmente a que nazca "Activo" en la pantalla
-        setPatients((prev) => [{ ...newPatient, enabled: true }, ...prev]);
+    const handleCreated = () => {
+        fetchPatients();
     };
 
-    const filteredPatients = patients.filter(
-        (p) =>
+    const handleReassignPhysio = async () => {
+        if (!selectedPatient || !reassignPhysioUsername) return;
+        setIsReassigning(true);
+        try {
+            const updated = await patientService.assignPhysio(selectedPatient.id, reassignPhysioUsername);
+            setPatients((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+            setSelectedPatient(updated);
+            alert('Fisioterapeuta asignado actualizado correctamente.');
+        } catch (e: any) {
+            alert(e.response?.data?.message || 'No se pudo actualizar el fisioterapeuta.');
+        } finally {
+            setIsReassigning(false);
+        }
+    };
+
+    const filteredPatients = patients.filter((p) => {
+        const matchesSearch =
             (p.fullName && p.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
             p.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+            p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.primaryPhysioName && p.primaryPhysioName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        const matchesPhysio =
+            selectedPhysioFilter === 'ALL' ||
+            (selectedPhysioFilter === 'UNASSIGNED' && !p.primaryPhysioUsername) ||
+            p.primaryPhysioUsername === selectedPhysioFilter;
+
+        return matchesSearch && matchesPhysio;
+    });
 
     // Función de Data Masking
     const maskEmail = (email: string) => {
@@ -107,14 +142,33 @@ export const PatientsPage = () => {
                 )}
             </div>
 
-            {/* Buscador */}
-            <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-                <Input
-                    placeholder="Buscar paciente por nombre de usuario o correo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    leftIcon={<Search className="w-5 h-5" />}
-                />
+            {/* Buscador y Filtro por Fisioterapeuta */}
+            <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                    <Input
+                        placeholder="Buscar por nombre, usuario, correo o fisioterapeuta..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        leftIcon={<Search className="w-5 h-5" />}
+                    />
+                </div>
+                {isAdminOrReception && (
+                    <div className="sm:w-72">
+                        <select
+                            value={selectedPhysioFilter}
+                            onChange={(e) => setSelectedPhysioFilter(e.target.value)}
+                            className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                        >
+                            <option value="ALL">👨‍⚕️ Todos los Fisioterapeutas ({patients.length})</option>
+                            {professionals.map((doc) => (
+                                <option key={doc.id} value={doc.username}>
+                                    🩺 {doc.fullName ? `${doc.fullName} (@${doc.username})` : `@${doc.username}`}
+                                </option>
+                            ))}
+                            <option value="UNASSIGNED">⚠️ Sin Fisioterapeuta Asignado</option>
+                        </select>
+                    </div>
+                )}
             </div>
 
             {/* Listado Responsivo */}
@@ -160,7 +214,10 @@ export const PatientsPage = () => {
                     {filteredPatients.map((patient) => (
                         <div
                             key={patient.id}
-                            onClick={() => setSelectedPatient(patient)}
+                            onClick={() => {
+                                setSelectedPatient(patient);
+                                setReassignPhysioUsername(patient.primaryPhysioUsername || '');
+                            }}
                             className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-teal-300 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer group"
                         >
                             <div>
@@ -192,6 +249,17 @@ export const PatientsPage = () => {
                                         <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                                         {/* Aplicamos la máscara en tiempo real */}
                                         <span className="truncate">{maskEmail(patient.email)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <Stethoscope className="w-4 h-4 text-teal-600 shrink-0" />
+                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg truncate ${patient.primaryPhysioName
+                                            ? 'bg-teal-50/70 text-teal-800 border border-teal-200/60'
+                                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            }`}>
+                                            {patient.primaryPhysioName
+                                                ? `Fisio: ${patient.primaryPhysioName}`
+                                                : 'Sin Fisio Asignado'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -306,7 +374,46 @@ export const PatientsPage = () => {
                                     <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                                     <span><strong>Teléfono:</strong> {selectedPatient.phone || 'No registrado'}</span>
                                 </div>
+                                <div className="flex items-center gap-2.5 text-xs text-slate-700">
+                                    <Stethoscope className="w-4 h-4 text-teal-600 shrink-0" />
+                                    <span>
+                                        <strong>Fisioterapeuta:</strong>{' '}
+                                        {selectedPatient.primaryPhysioName || 'Sin asignar'}
+                                    </span>
+                                </div>
                             </div>
+
+                            {isAdmin && (
+                                <div className="p-3.5 bg-teal-50/50 border border-teal-100 rounded-2xl space-y-2">
+                                    <label className="block text-[11px] font-bold text-teal-900 uppercase">
+                                        Cambiar Fisioterapeuta Asignado (Admin)
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={reassignPhysioUsername}
+                                            onChange={(e) => setReassignPhysioUsername(e.target.value)}
+                                            className="flex-1 h-9 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-teal-500"
+                                        >
+                                            <option value="" disabled>-- Seleccionar Fisioterapeuta --</option>
+                                            {professionals.map((doc) => (
+                                                <option key={doc.id} value={doc.username}>
+                                                    Dr/a. {doc.fullName ? `${doc.fullName} (@${doc.username})` : `@${doc.username}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            className="text-xs px-3"
+                                            isLoading={isReassigning}
+                                            disabled={!reassignPhysioUsername || reassignPhysioUsername === selectedPatient.primaryPhysioUsername}
+                                            onClick={handleReassignPhysio}
+                                        >
+                                            Guardar
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className={`grid ${hasRole('ROLE_ADMIN') ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-xs`}>
                                 <div className="p-3 bg-slate-50 rounded-2xl">

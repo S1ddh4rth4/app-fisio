@@ -6,6 +6,9 @@ export interface PatientDTO {
     phone?: string;
     mfaEnabled?: boolean;
     temporaryPassword?: string;
+    primaryPhysioId?: string;
+    primaryPhysioUsername?: string;
+    primaryPhysioName?: string;
     roles: string[];
     enabled: boolean;
     createdAt: string;

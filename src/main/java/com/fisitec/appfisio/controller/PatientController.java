@@ -53,6 +53,16 @@ public class PatientController {
                 .body(patientService.registerPatient(request, authentication.getName()));
     }
 
+    @PatchMapping("/{patientId}/assign-physio")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<com.fisitec.appfisio.dto.UserDTO> assignPhysiotherapist(
+            @PathVariable String patientId,
+            @RequestParam String physioUsername,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                patientService.assignPhysiotherapist(patientId, physioUsername, authentication.getName()));
+    }
+
     // Endpoint exclusivo de la Fase 4 (Derecho al Olvido)
     @DeleteMapping("/{patientId}")
     @PreAuthorize("hasRole('ADMIN')")

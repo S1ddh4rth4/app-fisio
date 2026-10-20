@@ -4,6 +4,7 @@ import com.fisitec.appfisio.dto.ClinicalHistoryRequestDTO;
 import com.fisitec.appfisio.dto.ClinicalHistoryResponseDTO;
 import com.fisitec.appfisio.entity.ClinicalHistory;
 import com.fisitec.appfisio.entity.User;
+import com.fisitec.appfisio.repository.AppointmentRepository;
 import com.fisitec.appfisio.repository.ClinicalHistoryRepository;
 import com.fisitec.appfisio.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class ClinicalHistoryService {
 
         private final ClinicalHistoryRepository historyRepository;
         private final UserRepository userRepository;
+        private final AppointmentRepository appointmentRepository;
         private final AuditService auditService;
 
         @Transactional
@@ -97,6 +99,10 @@ public class ClinicalHistoryService {
                                         "No tienes permisos para consultar el historial clínico de otro paciente.");
                 }
 
+                if (isStaff) {
+                        validatePhysioPortfolioAccess(patient, currentUsername);
+                }
+
                 return historyRepository.findByPatientIdOrderByCreatedAtDesc(patient.getId()).stream()
                                 .map(this::mapToDTO)
                                 .collect(Collectors.toList());
@@ -114,7 +120,40 @@ public class ClinicalHistoryService {
                         throw new AccessDeniedException("No tienes permisos para consultar esta historia clínica.");
                 }
 
+                if (isStaff) {
+                        validatePhysioPortfolioAccess(history.getPatient(), currentUsername);
+                }
+
                 return mapToDTO(history);
+        }
+
+        /**
+         * Garantiza que un fisioterapeuta solo consulte expedientes de pacientes de su
+         * propia cartera,
+         * mientras que el Administrador conserva acceso global de auditoría.
+         */
+        private void validatePhysioPortfolioAccess(User patient, String currentUsername) {
+                User currentUser = userRepository.findByUsername(currentUsername).orElse(null);
+                if (currentUser == null || currentUser.getRoles() == null) {
+                        return;
+                }
+                boolean isAdminOrReception = currentUser.getRoles().stream()
+                                .anyMatch(r -> "ROLE_ADMIN".equals(r.getName())
+                                                || "ROLE_RECEPCION".equals(r.getName()));
+                if (isAdminOrReception) {
+                        return;
+                }
+
+                boolean isPrimaryPhysio = patient.getPrimaryPhysio() != null
+                                && patient.getPrimaryPhysio().getUsername().equalsIgnoreCase(currentUsername);
+                boolean hasAppointmentsWithPhysio = appointmentRepository
+                                .findDistinctProfessionalIdsByPatientId(patient.getId())
+                                .contains(currentUser.getId());
+
+                if (!isPrimaryPhysio && !hasAppointmentsWithPhysio) {
+                        throw new AccessDeniedException(
+                                        "No tienes permisos para consultar el historial clínico de un paciente asignado a otro fisioterapeuta.");
+                }
         }
 
         @Transactional

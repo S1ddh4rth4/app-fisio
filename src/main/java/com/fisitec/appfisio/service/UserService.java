@@ -174,6 +174,14 @@ public class UserService {
         dto.setPhone(user.getPhone());
         dto.setProfessionalLicense(user.getProfessionalLicense());
         dto.setAvatarUrl(user.getAvatarUrl());
+        if (user.getPrimaryPhysio() != null) {
+            User physio = user.getPrimaryPhysio();
+            dto.setPrimaryPhysioId(physio.getId());
+            dto.setPrimaryPhysioUsername(physio.getUsername());
+            dto.setPrimaryPhysioName(physio.getFullName() != null && !physio.getFullName().isBlank()
+                    ? physio.getFullName() + " (@" + physio.getUsername() + ")"
+                    : "@" + physio.getUsername());
+        }
         dto.setRoles(user.getRoles() != null
                 ? user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
                 : java.util.Collections.emptySet());

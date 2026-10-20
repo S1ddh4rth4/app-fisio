@@ -14,6 +14,14 @@ export const patientService = {
         return response.data;
     },
 
+    // Reasignar fisioterapeuta de cabecera (Solo Admin)
+    assignPhysio: async (patientId: string, physioUsername: string): Promise<PatientDTO> => {
+        const response = await api.patch<PatientDTO>(`/v1/patients/${patientId}/assign-physio`, null, {
+            params: { physioUsername },
+        });
+        return response.data;
+    },
+
     // Llamada destructiva Fase 4
     delete: async (patientId: string): Promise<void> => {
         await api.delete(`/v1/patients/${patientId}`);

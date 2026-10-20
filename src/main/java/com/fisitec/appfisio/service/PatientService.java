@@ -28,6 +28,7 @@ public class PatientService {
         private final AppointmentRepository appointmentRepository;
         private final UserService userService;
         private final EmailService emailService;
+        private final AuditService auditService;
 
         /**
          * Obtiene el listado de pacientes con aislamiento estricto por rol:
@@ -170,5 +171,43 @@ public class PatientService {
                                                                 ? assignedPhysio.getFullName()
                                                                 : assignedPhysio.getUsername())
                                 .build();
+        }
+
+        /**
+         * Permite al Administrador reasignar el fisioterapeuta de cabecera de un
+         * paciente,
+         * dejando rastro en la bitácora de auditoría.
+         */
+        @Transactional
+        public UserDTO assignPhysiotherapist(String patientId, String physioUsername, String adminUsername) {
+                User patient = userRepository.findById(patientId)
+                                .orElseThrow(() -> new IllegalArgumentException("Paciente no encontrado"));
+
+                User newPhysio = userRepository.findByUsername(physioUsername.trim())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Fisioterapeuta no encontrado: " + physioUsername));
+
+                boolean isTargetFisio = newPhysio.getRoles() != null && newPhysio.getRoles().stream()
+                                .anyMatch(r -> "ROLE_FISIOTERAPEUTA".equals(r.getName()));
+                if (!isTargetFisio) {
+                        throw new IllegalArgumentException(
+                                        "El usuario seleccionado no cuenta con el rol de Fisioterapeuta.");
+                }
+
+                String previousPhysio = patient.getPrimaryPhysio() != null
+                                ? patient.getPrimaryPhysio().getUsername()
+                                : "NINGUNO";
+
+                patient.setPrimaryPhysio(newPhysio);
+                User saved = userRepository.save(patient);
+
+                auditService.logAction(
+                                adminUsername,
+                                "REASSIGN_PATIENT_PHYSIO",
+                                patient.getId(),
+                                "Paciente @" + patient.getUsername() + " reasignado de @" + previousPhysio + " a @"
+                                                + newPhysio.getUsername());
+
+                return userService.convertToDTO(saved);
         }
 }
