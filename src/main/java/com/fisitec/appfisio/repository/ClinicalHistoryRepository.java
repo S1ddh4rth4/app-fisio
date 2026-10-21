@@ -12,4 +12,6 @@ public interface ClinicalHistoryRepository extends JpaRepository<ClinicalHistory
     // Obtener todas las historias de un paciente ordenadas de la más reciente a la
     // más antigua
     List<ClinicalHistory> findByPatientIdOrderByCreatedAtDesc(String patientId);
+
+    boolean existsByPhysiotherapistId(String physiotherapistId);
 }

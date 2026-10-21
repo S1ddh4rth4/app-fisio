@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { staffService } from '../services/staffService';
 import { RegisterStaffModal } from './RegisterStaffModal';
 import { Button } from '../../../components/ui/Button';
@@ -22,9 +23,11 @@ import {
 } from 'lucide-react';
 
 export const StaffPage = () => {
+    const { user } = useAuth();
     const [staff, setStaff] = useState<StaffUserDTO[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isActionLoading, setIsActionLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<StaffUserDTO | null>(null);
     const [roleFilter, setRoleFilter] = useState<string>('ALL');
@@ -49,6 +52,38 @@ export const StaffPage = () => {
 
     const handleCreated = (newMember: StaffUserDTO) => {
         setStaff((prev) => [newMember, ...prev]);
+    };
+
+    const handleToggleStatus = async (staffMember: StaffUserDTO) => {
+        const actionLabel = staffMember.enabled ? 'suspender el acceso de' : 'reactivar la cuenta de';
+        if (!window.confirm(`¿Deseas ${actionLabel} @${staffMember.username}?`)) return;
+        setIsActionLoading(true);
+        try {
+            const updated = await staffService.toggleStatus(staffMember.id);
+            setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setSelectedStaff(updated);
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'No se pudo cambiar el estado de la cuenta.');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleDeleteStaff = async (staffMember: StaffUserDTO) => {
+        if (!window.confirm(`⚠️ ¿Eliminar definitivamente a @${staffMember.username}?\n\nEsto solo se permite si la cuenta fue creada por error y aún no tiene pacientes, citas ni historias clínicas.`)) {
+            return;
+        }
+        setIsActionLoading(true);
+        try {
+            const res = await staffService.deleteByMistake(staffMember.id);
+            setStaff((prev) => prev.filter((s) => s.id !== staffMember.id));
+            setSelectedStaff(null);
+            alert(res.message);
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'No se pudo eliminar la cuenta.');
+        } finally {
+            setIsActionLoading(false);
+        }
     };
 
     const filteredStaff = staff.filter((s) => {
@@ -240,9 +275,15 @@ export const StaffPage = () => {
                             </div>
 
                             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Cuenta Activa
-                                </span>
+                                {member.enabled ? (
+                                    <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> Cuenta Activa
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1 text-rose-600 font-semibold">
+                                        <AlertCircle className="w-3.5 h-3.5" /> Cuenta Suspendida
+                                    </span>
+                                )}
                                 <span className="text-teal-600 font-medium group-hover:underline">
                                     Ver detalles →
                                 </span>
@@ -336,7 +377,34 @@ export const StaffPage = () => {
                             )}
                         </div>
 
-                        <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
+                            {selectedStaff.username !== user?.username && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        isLoading={isActionLoading}
+                                        onClick={() => handleToggleStatus(selectedStaff)}
+                                        className={`text-xs justify-center ${selectedStaff.enabled
+                                            ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                                            : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                            }`}
+                                    >
+                                        {selectedStaff.enabled ? 'Suspender Cuenta' : 'Reactivar Cuenta'}
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        isLoading={isActionLoading}
+                                        onClick={() => handleDeleteStaff(selectedStaff)}
+                                        className="text-xs justify-center border-rose-200 text-rose-600 hover:bg-rose-50"
+                                    >
+                                        Eliminar (Por Error)
+                                    </Button>
+                                </div>
+                            )}
+
                             <Button
                                 variant="primary"
                                 size="sm"

@@ -295,7 +295,7 @@ export const PatientsPage = () => {
                                     </Button>
                                 </div>
 
-                                {/* Botón exclusivo de administradores (Derecho al Olvido) */}
+                                {/* Botón exclusivo de administradores (Borrado por error o Derecho al Olvido) */}
                                 {hasRole('ROLE_ADMIN') && patient.enabled && (
                                     <Button
                                         variant="outline"
@@ -304,18 +304,18 @@ export const PatientsPage = () => {
                                         leftIcon={<AlertCircle className="w-4 h-4" />}
                                         onClick={async (e) => {
                                             e.stopPropagation();
-                                            if (window.confirm("⚠️ ALERTA LEGAL: ¿Seguro que deseas eliminar y anonimizar a este paciente de forma irreversible?")) {
+                                            if (window.confirm("⚠️ ¿Deseas eliminar a este paciente?\n\n• Si fue creado por error (sin citas ni historial), se borrará por completo y su correo quedará libre.\n• Si ya tiene citas o historial clínico, se anonimizará por Derecho al Olvido.")) {
                                                 try {
-                                                    await patientService.delete(patient.id);
-                                                    fetchPatients(); // Recargar lista
-                                                    alert("Paciente anonimizado con éxito.");
-                                                } catch (e) {
-                                                    alert("Error al intentar eliminar. Verifica tus permisos.");
+                                                    const res = await patientService.delete(patient.id);
+                                                    fetchPatients();
+                                                    alert(res.message);
+                                                } catch (err: any) {
+                                                    alert(err.response?.data?.message || "Error al intentar eliminar. Verifica tus permisos.");
                                                 }
                                             }
                                         }}
                                     >
-                                        Ejecutar Derecho al Olvido
+                                        Eliminar / Derecho al Olvido
                                     </Button>
                                 )}
                             </div>

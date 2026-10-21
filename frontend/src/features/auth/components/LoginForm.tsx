@@ -351,6 +351,30 @@ export const LoginForm = () => {
     const [isMfaRequired, setIsMfaRequired] = useState(false);
     const [mfaCode, setMfaCode] = useState('');
 
+    const [isForgotOpen, setIsForgotOpen] = useState(false);
+    const [forgotIdentifier, setForgotIdentifier] = useState('');
+    const [isForgotLoading, setIsForgotLoading] = useState(false);
+    const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
+    const [forgotErrorMsg, setForgotErrorMsg] = useState<string | null>(null);
+
+    const handleForgotPassword = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!forgotIdentifier.trim()) return;
+        setIsForgotLoading(true);
+        setForgotErrorMsg(null);
+        setForgotSuccessMsg(null);
+        try {
+            const res = await authService.forgotPassword(forgotIdentifier.trim());
+            setForgotSuccessMsg(res.message);
+        } catch (err: any) {
+            setForgotErrorMsg(
+                err.response?.data?.message || 'Has superado el límite de intentos. Espera un minuto antes de reintentar.'
+            );
+        } finally {
+            setIsForgotLoading(false);
+        }
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setErrorMsg(null);
@@ -485,6 +509,21 @@ export const LoginForm = () => {
                                         autoComplete="current-password"
                                         className="!bg-white !text-slate-900 border-slate-300 placeholder:text-slate-400"
                                     />
+
+                                    <div className="flex justify-end -mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForgotIdentifier(loginIdentifier);
+                                                setForgotSuccessMsg(null);
+                                                setForgotErrorMsg(null);
+                                                setIsForgotOpen(true);
+                                            }}
+                                            className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
+                                        >
+                                            ¿Olvidaste tu contraseña?
+                                        </button>
+                                    </div>
                                 </>
                             )}
 
@@ -502,6 +541,81 @@ export const LoginForm = () => {
                             </div>
                         </form>
                     </div>
+
+                    {/* Modal de Recuperación de Contraseña */}
+                    {isForgotOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
+                                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
+                                            <KeyRound className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-extrabold text-slate-900">Recuperar Contraseña</h3>
+                                            <p className="text-xs text-slate-500">Te enviaremos una clave temporal por correo</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {forgotSuccessMsg ? (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-teal-50 border border-teal-200 rounded-2xl flex items-start gap-3 text-xs text-teal-900 leading-relaxed">
+                                            <CheckCircle2 className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+                                            <span>{forgotSuccessMsg}</span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            size="md"
+                                            className="w-full"
+                                            onClick={() => setIsForgotOpen(false)}
+                                        >
+                                            Volver a Iniciar Sesión
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                                        {forgotErrorMsg && (
+                                            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-xs text-rose-800">
+                                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                                <span>{forgotErrorMsg}</span>
+                                            </div>
+                                        )}
+
+                                        <Input
+                                            label="Tu Usuario o Correo Registrado"
+                                            type="text"
+                                            required
+                                            placeholder="ej. juanperez o correo@ejemplo.com"
+                                            value={forgotIdentifier}
+                                            onChange={(e) => setForgotIdentifier(e.target.value)}
+                                            leftIcon={<Mail className="w-5 h-5 text-slate-400" />}
+                                        />
+
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setIsForgotOpen(false)}
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                variant="primary"
+                                                size="sm"
+                                                isLoading={isForgotLoading}
+                                            >
+                                                Enviar Clave Temporal
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <p className="mt-6 text-center text-xs text-slate-500 font-medium">
                         Acceso seguro y protegido para personal clínico y pacientes.

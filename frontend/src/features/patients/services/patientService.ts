@@ -22,8 +22,9 @@ export const patientService = {
         return response.data;
     },
 
-    // Llamada destructiva Fase 4
-    delete: async (patientId: string): Promise<void> => {
-        await api.delete(`/v1/patients/${patientId}`);
+    // Borrado inteligente (si fue creado por error) o Derecho al Olvido
+    delete: async (patientId: string): Promise<{ message: string }> => {
+        const response = await api.delete<{ message: string }>(`/v1/patients/${patientId}`);
+        return response.data;
     },
 };

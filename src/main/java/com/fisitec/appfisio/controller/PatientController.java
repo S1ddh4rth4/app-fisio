@@ -63,11 +63,14 @@ public class PatientController {
                 patientService.assignPhysiotherapist(patientId, physioUsername, authentication.getName()));
     }
 
-    // Endpoint exclusivo de la Fase 4 (Derecho al Olvido)
+    // Borrado inteligente (si fue creado por error) o Derecho al Olvido (si ya
+    // tiene historial)
     @DeleteMapping("/{patientId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletePatient(@PathVariable String patientId, Authentication authentication) {
-        userService.deleteAndAnonymizePatient(patientId, authentication.getName());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<java.util.Map<String, String>> deletePatient(
+            @PathVariable String patientId,
+            Authentication authentication) {
+        String resultMessage = userService.deleteAndAnonymizePatient(patientId, authentication.getName());
+        return ResponseEntity.ok(java.util.Map.of("message", resultMessage));
     }
 }

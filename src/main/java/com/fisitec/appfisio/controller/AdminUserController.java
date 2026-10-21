@@ -58,4 +58,23 @@ public class AdminUserController {
                 request.getFullName());
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.convertToDTO(user));
     }
+
+    @PatchMapping("/{userId}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Suspend or reactivate a staff member account (Admin only)")
+    public ResponseEntity<UserDTO> toggleStaffStatus(
+            @PathVariable String userId,
+            org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.ok(userService.toggleStaffStatus(userId, authentication.getName()));
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a staff member created by mistake if they have no clinical records (Admin only)")
+    public ResponseEntity<java.util.Map<String, String>> deleteStaffByMistake(
+            @PathVariable String userId,
+            org.springframework.security.core.Authentication authentication) {
+        String message = userService.deleteStaffByMistake(userId, authentication.getName());
+        return ResponseEntity.ok(java.util.Map.of("message", message));
+    }
 }

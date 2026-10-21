@@ -30,7 +30,8 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         if ("POST".equalsIgnoreCase(request.getMethod())
-                && "/api/auth/login".equalsIgnoreCase(request.getRequestURI())) {
+                && ("/api/auth/login".equalsIgnoreCase(request.getRequestURI())
+                        || "/api/auth/forgot-password".equalsIgnoreCase(request.getRequestURI()))) {
             String clientIp = extractClientIp(request);
 
             if (!rateLimiterService.isAllowed(clientIp)) {

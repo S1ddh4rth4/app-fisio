@@ -40,6 +40,7 @@ public class PatientService {
         public List<UserDTO> getPatientsForUser(String username, boolean isStaffAdmin) {
                 if (isStaffAdmin) {
                         return userRepository.findByRoles_Name("ROLE_PACIENTE").stream()
+                                        .filter(p -> p.getUsername() == null || !p.getUsername().startsWith("borrado_"))
                                         .map(userService::convertToDTO)
                                         .collect(Collectors.toList());
                 }
@@ -62,6 +63,7 @@ public class PatientService {
                 });
 
                 return userRepository.findAllById(patientIds).stream()
+                                .filter(p -> p.getUsername() == null || !p.getUsername().startsWith("borrado_"))
                                 .map(userService::convertToDTO)
                                 .collect(Collectors.toList());
         }

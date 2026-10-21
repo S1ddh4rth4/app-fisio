@@ -106,6 +106,25 @@ public class AuthService {
     }
 
     /**
+     * Procesa la solicitud de "¿Olvidaste tu contraseña?" enviando una clave
+     * temporal por correo sin revelar si el usuario existe o no.
+     */
+    public void recoverPassword(String identifier) {
+        var resultOpt = userService.resetPasswordByIdentifier(identifier);
+        if (resultOpt.isEmpty()) {
+            applyProgressiveDelay();
+            return;
+        }
+        User user = resultOpt.get().getKey();
+        String tempPassword = resultOpt.get().getValue();
+        emailService.sendPasswordResetEmail(
+                user.getEmail(),
+                user.getFullName() != null ? user.getFullName() : user.getUsername(),
+                user.getUsername(),
+                tempPassword);
+    }
+
+    /**
      * Introduce un retardo deliberado de 1 segundo para ralentizar ataques
      * automatizados de fuerza bruta.
      */

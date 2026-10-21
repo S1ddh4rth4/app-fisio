@@ -414,4 +414,88 @@ public class EmailService {
       log.error("Fallo al enviar resumen de sesión: {}", e.getMessage());
     }
   }
+
+  /**
+   * Envía en segundo plano (@Async) una contraseña temporal de recuperación
+   * cuando el usuario solicita "¿Olvidaste tu contraseña?".
+   */
+  @Async
+  public void sendPasswordResetEmail(String toEmail, String displayName, String username, String temporaryPassword) {
+    if (mailPassword == null || mailPassword.isBlank()) {
+      log.info("Modo sin MAIL_PASSWORD: se omite envío de recuperación de contraseña a {}", toEmail);
+      return;
+    }
+
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(
+          message,
+          MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+          StandardCharsets.UTF_8.name());
+
+      String greetingName = (displayName != null && !displayName.isBlank()) ? displayName : username;
+
+      helper.setFrom(fromEmail, "AppFisio Seguridad");
+      helper.setReplyTo(fromEmail);
+      helper.setTo(toEmail);
+      helper.setSubject("Recuperación de Contraseña — AppFisio");
+
+      message.addHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
+      message.addHeader("Auto-Submitted", "auto-generated");
+
+      String plainText = """
+          ¡Hola, %s!
+
+          Recibimos una solicitud para restablecer el acceso a tu cuenta en AppFisio.
+
+          Tus datos de acceso temporal:
+          - Usuario: %s
+          - Clave temporal de recuperación: %s
+
+          Al iniciar sesión con esta clave temporal, el sistema te pedirá crear tu nueva contraseña personal.
+
+          Ingresa aquí: %s
+          """.formatted(greetingName, username, temporaryPassword, getFrontendUrl());
+
+      String htmlText = """
+          <!DOCTYPE html>
+          <html lang="es">
+          <body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+            <div style="max-width:560px;margin:32px auto;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
+              <div style="background:#0d9488;padding:28px 32px;text-align:center;color:#ffffff;">
+                <h1 style="margin:0;font-size:24px;font-weight:800;">AppFisio</h1>
+                <p style="margin:4px 0 0;font-size:13px;opacity:0.9;">Recuperación de Acceso</p>
+              </div>
+              <div style="padding:32px;">
+                <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a;">¡Hola, %s!</h2>
+                <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#475569;">
+                  Se ha generado una clave temporal para restablecer tu acceso a <strong>AppFisio</strong>:
+                </p>
+                <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:16px;padding:20px;margin-bottom:22px;">
+                  <p style="margin:0 0 8px;font-size:13px;color:#334155;"><strong>Usuario:</strong> <code style="color:#0f172a;font-size:14px;">%s</code></p>
+                  <p style="margin:0;font-size:13px;color:#334155;"><strong>Clave temporal:</strong> <code style="background:#ccfbf1;color:#115e59;padding:3px 8px;border-radius:6px;font-weight:700;font-size:14px;">%s</code></p>
+                </div>
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:24px;font-size:12px;color:#92400e;line-height:1.5;">
+                  <strong>Seguridad:</strong> En cuanto ingreses con esta clave temporal, el sistema te solicitará definir tu nueva contraseña personal.
+                </div>
+                <div style="text-align:center;margin:24px 0 10px;">
+                  <a href="%s" style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:12px;">
+                    Iniciar Sesión y Cambiar Contraseña
+                  </a>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          """
+          .formatted(escapeHtml(greetingName), escapeHtml(username), escapeHtml(temporaryPassword),
+              getFrontendUrl());
+
+      helper.setText(plainText, htmlText);
+      mailSender.send(message);
+      log.info("Correo de recuperación de contraseña enviado a {}", toEmail);
+    } catch (Exception e) {
+      log.error("Fallo al enviar correo de recuperación a {}: {}", toEmail, e.getMessage());
+    }
+  }
 }

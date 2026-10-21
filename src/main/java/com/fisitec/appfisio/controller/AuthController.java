@@ -78,4 +78,15 @@ public class AuthController {
             throw e;
         }
     }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Recover forgotten password", description = "Sends a temporary recovery password to the registered email")
+    public ResponseEntity<java.util.Map<String, String>> forgotPassword(
+            @RequestBody java.util.Map<String, String> body) {
+        String identifier = body != null ? body.get("identifier") : null;
+        authService.recoverPassword(identifier);
+        return ResponseEntity.ok(java.util.Map.of(
+                "message",
+                "Si el usuario o correo corresponde a una cuenta activa, hemos enviado una contraseña temporal a su correo electrónico registrado."));
+    }
 }

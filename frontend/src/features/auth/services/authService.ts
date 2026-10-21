@@ -6,4 +6,9 @@ export const authService = {
         const response = await api.post<AuthResponse>('/auth/login', credentials);
         return response.data;
     },
+
+    forgotPassword: async (identifier: string): Promise<{ message: string }> => {
+        const response = await api.post<{ message: string }>('/auth/forgot-password', { identifier });
+        return response.data;
+    },
 };

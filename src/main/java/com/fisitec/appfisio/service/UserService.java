@@ -22,6 +22,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final com.fisitec.appfisio.repository.AppointmentRepository appointmentRepository;
+    private final com.fisitec.appfisio.repository.ClinicalHistoryRepository clinicalHistoryRepository;
+    private final com.fisitec.appfisio.repository.ExercisePrescriptionRepository prescriptionRepository;
+    private final com.fisitec.appfisio.repository.PatientPackageRepository patientPackageRepository;
     private final AuditService auditService;
     private final MfaService mfaService;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -29,12 +32,18 @@ public class UserService {
     public UserService(UserRepository userRepository,
             RoleRepository roleRepository,
             com.fisitec.appfisio.repository.AppointmentRepository appointmentRepository,
+            com.fisitec.appfisio.repository.ClinicalHistoryRepository clinicalHistoryRepository,
+            com.fisitec.appfisio.repository.ExercisePrescriptionRepository prescriptionRepository,
+            com.fisitec.appfisio.repository.PatientPackageRepository patientPackageRepository,
             AuditService auditService,
             MfaService mfaService,
             @Lazy BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.appointmentRepository = appointmentRepository;
+        this.clinicalHistoryRepository = clinicalHistoryRepository;
+        this.prescriptionRepository = prescriptionRepository;
+        this.patientPackageRepository = patientPackageRepository;
         this.auditService = auditService;
         this.mfaService = mfaService;
         this.passwordEncoder = passwordEncoder;
@@ -340,38 +349,152 @@ public class UserService {
     }
 
     /**
-     * Derecho al Olvido (Soft Delete & Anonymization)
-     * Borra la identidad del paciente, pero mantiene su historial clínico
-     * encriptado para fines de métricas de la clínica.
+     * Borrado Inteligente / Derecho al Olvido:
+     * - Si el paciente fue creado por error (0 citas, 0 historias, 0 rutinas y 0
+     * paquetes),
+     * lo elimina definitivamente de la base de datos liberando su correo y usuario.
+     * - Si ya cuenta con historial clínico o citas, anonimiza sus datos personales
+     * (NOM-004).
      */
     @org.springframework.transaction.annotation.Transactional
-    public void deleteAndAnonymizePatient(String patientId, String adminUsername) {
-        // 1. Buscamos al paciente
+    public String deleteAndAnonymizePatient(String patientId, String adminUsername) {
         User patient = userRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Paciente no encontrado en el sistema."));
 
-        // 2. Regla de Negocio: Validar que solo borremos pacientes
         boolean isPatient = patient.getRoles().stream()
                 .anyMatch(role -> role.getName().equals("ROLE_PACIENTE"));
 
         if (!isPatient) {
-            throw new IllegalArgumentException("¡Alto! No puedes anonimizar a un fisioterapeuta o administrador.");
+            throw new IllegalArgumentException("¡Alto! Este usuario pertenece al personal clínico.");
         }
 
-        // 3. Generamos un código aleatorio para destruir su identidad
-        String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 8);
+        boolean hasAppointments = !appointmentRepository.findByPatientId(patientId).isEmpty();
+        boolean hasHistories = !clinicalHistoryRepository.findByPatientIdOrderByCreatedAtDesc(patientId).isEmpty();
+        boolean hasPrescriptions = !prescriptionRepository.findByPatientIdOrderByCreatedAtDesc(patientId).isEmpty();
+        boolean hasPackages = !patientPackageRepository.findByPatientIdOrderByCreatedAtDesc(patientId).isEmpty();
 
-        // 4. Anonimización destructiva (PII Scrambling)
+        if (!hasAppointments && !hasHistories && !hasPrescriptions && !hasPackages) {
+            String deletedUsername = patient.getUsername();
+            String deletedEmail = patient.getEmail();
+            userRepository.delete(patient);
+            auditService.logAction(adminUsername, "DELETE_PATIENT_MISTAKE", patientId,
+                    "Paciente @" + deletedUsername + " (" + deletedEmail
+                            + ") eliminado definitivamente por carecer de historial clínico o citas.");
+            return "El paciente no tenía citas ni historial clínico, por lo que fue eliminado definitivamente y su correo quedó libre.";
+        }
+
+        String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 8);
+        patient.setFullName("Paciente Anonimizado");
+        patient.setPhone(null);
+        patient.setPrimaryPhysio(null);
         patient.setUsername("borrado_" + randomSuffix);
         patient.setEmail("anon_" + randomSuffix + "@borrado.com");
-        patient.setPassword("CUENTA_DESTRUIDA_IRREVERSIBLE"); // Invalidamos su login
-        patient.setEnabled(false); // Apagamos la cuenta en Spring Security
+        patient.setPassword("CUENTA_DESTRUIDA_IRREVERSIBLE");
+        patient.setEnabled(false);
+        patient.setTokenVersion((patient.getTokenVersion() == null ? 0 : patient.getTokenVersion()) + 1);
 
         userRepository.save(patient);
 
-        // 5. ¡Vigilancia! El administrador que hizo esto queda grabado para siempre
         auditService.logAction(adminUsername, "ANONYMIZE_PATIENT", patientId,
-                "El paciente exigió su Derecho al Olvido. Datos PII destruidos.");
+                "El paciente exigió su Derecho al Olvido. Datos PII destruidos conservando integridad contable/clínica.");
+        return "El paciente ya contaba con historial o citas, por lo que fue anonimizado (Derecho al Olvido) y ocultado del directorio activo.";
+    }
+
+    /**
+     * Suspende o reactiva la cuenta de un miembro del personal clínico (Solo
+     * Admin).
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public UserDTO toggleStaffStatus(String userId, String adminUsername) {
+        User staffUser = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario del personal no encontrado."));
+
+        if (staffUser.getUsername().equalsIgnoreCase(adminUsername)) {
+            throw new IllegalArgumentException("Por seguridad, no puedes suspender tu propia cuenta de Administrador.");
+        }
+
+        boolean newStatus = !Boolean.TRUE.equals(staffUser.getEnabled());
+        staffUser.setEnabled(newStatus);
+        staffUser.setTokenVersion((staffUser.getTokenVersion() == null ? 0 : staffUser.getTokenVersion()) + 1);
+        User saved = userRepository.save(staffUser);
+
+        auditService.logAction(adminUsername, newStatus ? "REACTIVATE_STAFF" : "SUSPEND_STAFF", userId,
+                "Cuenta del personal @" + staffUser.getUsername()
+                        + (newStatus ? " reactivada." : " suspendida y sesiones cerradas."));
+
+        return convertToDTO(saved);
+    }
+
+    /**
+     * Elimina definitivamente a un miembro del personal si fue creado por error
+     * y aún no tiene pacientes, citas ni historias clínicas asociadas.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public String deleteStaffByMistake(String userId, String adminUsername) {
+        User staffUser = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario del personal no encontrado."));
+
+        if (staffUser.getUsername().equalsIgnoreCase(adminUsername)) {
+            throw new IllegalArgumentException("No puedes eliminar tu propia cuenta de Administrador.");
+        }
+
+        boolean hasAssignedPatients = !userRepository.findByPrimaryPhysio(staffUser).isEmpty();
+        boolean hasAppointments = !appointmentRepository
+                .findByProfessionalIdOrderByAppointmentDateDesc(userId).isEmpty();
+        boolean hasHistories = clinicalHistoryRepository.existsByPhysiotherapistId(userId);
+        boolean hasPrescriptions = !prescriptionRepository
+                .findByPhysiotherapistIdOrderByCreatedAtDesc(userId).isEmpty();
+
+        if (hasAssignedPatients || hasAppointments || hasHistories || hasPrescriptions) {
+            throw new IllegalStateException(
+                    "Este profesional ya cuenta con pacientes asignados, citas o historias clínicas firmadas. "
+                            + "Para conservar la trazabilidad legal y contable, reasigna primero sus pacientes y utiliza el botón 'Suspender Cuenta'.");
+        }
+
+        String deletedUsername = staffUser.getUsername();
+        String deletedEmail = staffUser.getEmail();
+        userRepository.delete(staffUser);
+
+        auditService.logAction(adminUsername, "DELETE_STAFF_MISTAKE", userId,
+                "Miembro del personal @" + deletedUsername + " (" + deletedEmail
+                        + ") eliminado definitivamente por haber sido creado por error (sin actividad clínica).");
+
+        return "El usuario @" + deletedUsername
+                + " no tenía actividad clínica y fue eliminado definitivamente. Su correo y usuario han quedado libres.";
+    }
+
+    /**
+     * Genera una contraseña temporal de recuperación cuando el usuario olvida su
+     * contraseña.
+     * Devuelve el usuario y la clave en texto plano para envío por correo, o
+     * Optional.empty() si no aplica.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Optional<java.util.Map.Entry<User, String>> resetPasswordByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+        String clean = identifier.trim();
+        Optional<User> userOpt = userRepository.findByUsername(clean)
+                .or(() -> userRepository.findByEmailIgnoreCase(clean));
+
+        if (userOpt.isEmpty() || !Boolean.TRUE.equals(userOpt.get().getEnabled())) {
+            return Optional.empty();
+        }
+
+        User user = userOpt.get();
+        String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 6);
+        String tempPassword = "Rec-" + randomSuffix;
+
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        user.setMustChangePassword(true);
+        user.setTokenVersion((user.getTokenVersion() == null ? 0 : user.getTokenVersion()) + 1);
+        userRepository.save(user);
+
+        auditService.logAction(user.getUsername(), "PASSWORD_RECOVERY_REQUEST", user.getId(),
+                "Se generó contraseña temporal de recuperación y se solicitó cambio obligatorio al ingresar.");
+
+        return Optional.of(java.util.Map.entry(user, tempPassword));
     }
 
     /**
@@ -392,6 +515,7 @@ public class UserService {
     public java.util.List<UserDTO> getProfessionalsForUser(String username, boolean isPatient) {
         if (!isPatient) {
             return findByRole("ROLE_FISIOTERAPEUTA").stream()
+                    .filter(u -> Boolean.TRUE.equals(u.getEnabled()))
                     .map(this::convertToDTO)
                     .toList();
         }
