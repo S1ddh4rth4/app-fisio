@@ -192,7 +192,7 @@ public class EmailService {
           ? physio.getFullName()
           : physio.getUsername();
 
-      // 1. Correo al Paciente con recomendaciones de vestimenta (Punto 12)
+      // 1. Correo al Paciente con ubicación, acceso e indicaciones de vestimenta
       if (patientEmail != null && !patientEmail.isBlank()) {
         MimeMessage msg = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(msg, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
@@ -201,6 +201,33 @@ public class EmailService {
         helper.setReplyTo(fromEmail);
         helper.setTo(patientEmail);
         helper.setSubject("Cita Confirmada en AppFisio — " + formattedDate);
+
+        boolean isDomicilio = appt.getAppointmentType() != null
+            && appt.getAppointmentType().toUpperCase().contains("DOMICILIO");
+
+        String locationHtml = isDomicilio
+            ? """
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
+                  <strong style="font-size:13px;display:block;margin-bottom:6px;">Modalidad: Atención en Casa (A Domicilio)</strong>
+                  Tu fisioterapeuta acudirá al domicilio indicado en el horario programado. Recuerda que el servicio a domicilio conlleva un cargo adicional por traslado.
+                </div>
+                """
+            : """
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
+                  <strong style="font-size:13px;display:block;margin-bottom:6px;">Ubicación del Consultorio y Acceso:</strong>
+                  <p style="margin:0 0 8px;"><strong>Dirección:</strong> Av. Insurgentes Sur 540</p>
+                  <p style="margin:0 0 10px;">
+                    <a href="https://share.google/JbOJ201VfuxS3HOJK" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:700;font-size:11px;padding:7px 14px;border-radius:8px;">
+                      Ver Ubicación en Google Maps
+                    </a>
+                  </p>
+                  <p style="margin:0;color:#1e40af;"><strong>Acceso al edificio:</strong> Es indispensable presentar tu <strong>INE</strong> (identificación oficial vigente) en recepción para que te permitan el acceso al edificio.</p>
+                </div>
+                """;
+
+        String locationPlainText = isDomicilio
+            ? "\n\nModalidad: Atención en Casa (A Domicilio — aplica cargo extra por traslado)."
+            : "\n\nUbicación del Consultorio: Av. Insurgentes Sur 540 (Mapa: https://share.google/JbOJ201VfuxS3HOJK )\nIMPORTANTE ACCESO: Recuerda llevar tu INE para registrarte y dar acceso al edificio.";
 
         String htmlPatient = """
             <!DOCTYPE html>
@@ -221,8 +248,10 @@ public class EmailService {
                     <p style="margin:0;"><strong>Tipo de Consulta:</strong> %s</p>
                   </div>
 
+                  %s
+
                   <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:16px;padding:18px;margin-bottom:22px;font-size:12px;color:#92400e;line-height:1.6;">
-                    <strong style="font-size:13px;display:block;margin-bottom:6px;">⚠️ Recomendación Importante de Vestimenta:</strong>
+                    <strong style="font-size:13px;display:block;margin-bottom:6px;">Recomendación Importante de Vestimenta:</strong>
                     Para poder realizar tu valoración funcional y aplicar las técnicas fisioterapéuticas con total comodidad, te solicitamos acudir con <strong>ropa cómoda u holgada</strong>:
                     <ul style="margin:8px 0 0;padding-left:20px;">
                       <li><strong>Zona inferior y columna:</strong> Short deportivo (indispensable acudir en short).</li>
@@ -245,11 +274,12 @@ public class EmailService {
             </html>
             """
             .formatted(escapeHtml(patientName), escapeHtml(formattedDate), escapeHtml(physioName),
-                escapeHtml(appt.getAppointmentType()), getFrontendUrl());
+                escapeHtml(appt.getAppointmentType()), locationHtml, getFrontendUrl());
 
         String plainTextPatient = "¡Hola, " + patientName + "!\n\nTu cita en AppFisio está confirmada para el "
             + formattedDate + " con " + physioName
-            + ".\n\nRecomendación importante: Asistir con ropa cómoda u holgada (indispensable acudir en short deportivo, y blusa o playera de tirantes).\n\nIngresa a: "
+            + "." + locationPlainText
+            + "\n\nRecomendación importante: Asistir con ropa cómoda u holgada (indispensable acudir en short deportivo, y blusa o playera de tirantes).\n\nIngresa a: "
             + getFrontendUrl();
         msg.addHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
         msg.addHeader("Auto-Submitted", "auto-generated");

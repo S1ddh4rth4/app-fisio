@@ -17,7 +17,8 @@ import {
     Stethoscope,
     Calendar,
     AlertCircle,
-    Loader2
+    Loader2,
+    Trash2
 } from 'lucide-react';
 import { ClinicalHistoryViewer } from './ClinicalHistoryViewer';
 
@@ -82,6 +83,19 @@ export const RecordsPage = () => {
 
     const handleCreated = (newRecord: MedicalRecordResponseDTO) => {
         setRecords((prev) => [newRecord, ...prev]);
+    };
+
+    const handleDeleteHistoryCard = async (hist: ClinicalHistoryResponseDTO) => {
+        if (!hist.id) return;
+        if (!window.confirm(`¿Deseas eliminar definitivamente la evaluación "${hist.mainDiagnosis || 'Historia Clínica'}" del expediente?\n\nEsta acción eliminará el registro de la base de datos sin afectar citas ni pagos.`)) {
+            return;
+        }
+        try {
+            await clinicalHistoryService.delete(hist.id);
+            setClinicalHistories((prev) => prev.filter((h) => h.id !== hist.id));
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'No se pudo eliminar la historia clínica.');
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -252,18 +266,33 @@ export const RecordsPage = () => {
                                             </p>
                                         </div>
 
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            className="w-full text-xs justify-center"
-                                            onClick={() => {
-                                                setSelectedHistory(hist);
-                                                setIsHistoryOpen(true);
-                                            }}
-                                            leftIcon={<FileText className="w-3.5 h-3.5" />}
-                                        >
-                                            {isPatient ? 'Ver / Imprimir' : 'Consultar / Abrir'}
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="flex-1 text-xs justify-center"
+                                                onClick={() => {
+                                                    setSelectedHistory(hist);
+                                                    setIsHistoryOpen(true);
+                                                }}
+                                                leftIcon={<FileText className="w-3.5 h-3.5" />}
+                                            >
+                                                {isPatient ? 'Ver / Imprimir' : 'Consultar / Abrir'}
+                                            </Button>
+
+                                            {(hasRole('ROLE_ADMIN') || (!isPatient && hist.createdAt && (Date.now() - new Date(hist.createdAt).getTime()) < 24 * 60 * 60 * 1000)) && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-xs px-3 border-rose-200 text-rose-600 hover:bg-rose-50"
+                                                    onClick={() => handleDeleteHistoryCard(hist)}
+                                                    leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                                                    title="Eliminar historia clínica"
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

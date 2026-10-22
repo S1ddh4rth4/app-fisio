@@ -26,6 +26,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
     const [selectedTime, setSelectedTime] = useState('09:00');
     const [reason, setReason] = useState('');
     const [appointmentType, setAppointmentType] = useState('VALORACION_INICIAL'); // Por Defecto
+    const [modality, setModality] = useState<'CONSULTORIO' | 'DOMICILIO'>('CONSULTORIO');
 
     const [patientsList, setPatientsList] = useState<PatientDTO[]>([]);
     const [professionalsList, setProfessionalsList] = useState<any[]>([]); // Lista de Doctores
@@ -114,6 +115,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
             setSelectedTime(firstValidTime);
             setReason('');
             setAppointmentType('VALORACION_INICIAL');
+            setModality('CONSULTORIO');
 
             // 3. Cargar lista de pacientes (si eres doctor) o fijar tu nombre (si eres paciente)
             if (isPatient) {
@@ -135,6 +137,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
         setSelectedDate('');      // Limpiamos la fecha nueva
         setSelectedTime('09:00'); // Reiniciamos la hora
         setReason('');
+        setModality('CONSULTORIO');
         onClose();
     };
 
@@ -156,7 +159,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                 professionalId,
                 appointmentDate: finalDateTime,
                 reason,
-                appointmentType, // Enviamos el combobox
+                appointmentType: `${appointmentType} - ${modality}`,
             });
             onSuccess(created);
             handleClose();
@@ -334,24 +337,49 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                                Tipo de Cita <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative rounded-xl mb-4">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <FileText className="w-5 h-5" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">
+                                        Tipo de Cita <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="relative rounded-xl">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <FileText className="w-5 h-5" />
+                                        </div>
+                                        <select
+                                            required
+                                            value={appointmentType}
+                                            onChange={(e) => setAppointmentType(e.target.value)}
+                                            className="w-full h-12 bg-white text-slate-900 text-sm rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 pl-11 pr-3 transition-all duration-200 cursor-pointer"
+                                        >
+                                            <option value="VALORACION_INICIAL">Valoración Inicial</option>
+                                            <option value="REHABILITACION">Plan de Rehabilitación</option>
+                                            <option value="REVISION_RUTINA">Revisión de Rutina</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <select
-                                    required
-                                    value={appointmentType}
-                                    onChange={(e) => setAppointmentType(e.target.value)}
-                                    className="w-full h-12 bg-white text-slate-900 text-base rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 pl-11 pr-4 transition-all duration-200 cursor-pointer"
-                                >
-                                    <option value="VALORACION_INICIAL">Valoración Inicial</option>
-                                    <option value="REHABILITACION">Plan de Rehabilitación (Seguimiento)</option>
-                                    <option value="REVISION_RUTINA">Revisión de Rutina</option>
-                                </select>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">
+                                        Modalidad <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        required
+                                        value={modality}
+                                        onChange={(e) => setModality(e.target.value as 'CONSULTORIO' | 'DOMICILIO')}
+                                        className="w-full h-12 bg-white text-slate-900 text-sm rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 px-3.5 transition-all duration-200 cursor-pointer"
+                                    >
+                                        <option value="CONSULTORIO">En Consultorio (Presencial)</option>
+                                        <option value="DOMICILIO">En Casa (Costo extra)</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            {modality === 'DOMICILIO' && (
+                                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+                                    <strong>Atención a Domicilio:</strong> Genera un costo adicional por traslado. Por favor incluye tu <strong>dirección completa</strong> en el campo de notas aquí abajo.
+                                </div>
+                            )}
 
                             <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                 Notas u Observaciones Adicionales <span className="text-rose-500">*</span>
@@ -363,7 +391,11 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                                 <textarea
                                     required
                                     rows={3}
-                                    placeholder="Detalles sobre el motivo de la cita, dolores, etc."
+                                    placeholder={
+                                        modality === 'DOMICILIO'
+                                            ? 'Escribe aquí tu dirección completa (calle, número, colonia, referencias) y el motivo de la consulta...'
+                                            : 'Detalles sobre el motivo de la cita, dolores, etc.'
+                                    }
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     className="w-full bg-white text-slate-900 placeholder:text-slate-400 text-base rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 pl-11 pr-4 py-3 transition-all duration-200"

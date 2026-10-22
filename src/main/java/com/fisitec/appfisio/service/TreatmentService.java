@@ -69,16 +69,12 @@ public class TreatmentService {
             // Aislamiento: El fisioterapeuta solo ve su propio catálogo
             list = treatmentRepository.findByPhysiotherapist(currentUser);
         } else if (isPatient) {
-            // Aislamiento con Fallback: El paciente ve los tratamientos de su fisio de
-            // cabecera
-            // o el catálogo general de la clínica si aún no tiene fisio asignado
+            // Aislamiento estricto: El paciente únicamente ve los tratamientos de su
+            // fisioterapeuta asignado
             if (currentUser.getPrimaryPhysio() != null) {
                 list = treatmentRepository.findByPhysiotherapist(currentUser.getPrimaryPhysio());
-                if (list.isEmpty()) {
-                    list = treatmentRepository.findAll();
-                }
             } else {
-                list = treatmentRepository.findAll();
+                list = List.of();
             }
         } else {
             // Admin y Recepción supervisan toda la clínica

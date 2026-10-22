@@ -159,13 +159,13 @@ export const PatientsPage = () => {
                             onChange={(e) => setSelectedPhysioFilter(e.target.value)}
                             className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
                         >
-                            <option value="ALL">👨‍⚕️ Todos los Fisioterapeutas ({patients.length})</option>
+                            <option value="ALL">Todos los Fisioterapeutas ({patients.length})</option>
                             {professionals.map((doc) => (
                                 <option key={doc.id} value={doc.username}>
-                                    🩺 {doc.fullName ? `${doc.fullName} (@${doc.username})` : `@${doc.username}`}
+                                    {doc.fullName ? `${doc.fullName} (@${doc.username})` : `@${doc.username}`}
                                 </option>
                             ))}
-                            <option value="UNASSIGNED">⚠️ Sin Fisioterapeuta Asignado</option>
+                            <option value="UNASSIGNED">Sin Fisioterapeuta Asignado</option>
                         </select>
                     </div>
                 )}

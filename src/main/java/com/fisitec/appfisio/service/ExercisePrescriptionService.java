@@ -70,6 +70,8 @@ public class ExercisePrescriptionService {
                 if (isAdmin) {
                         return prescriptionRepository.findAllByOrderByCreatedAtDesc()
                                         .stream()
+                                        .filter(p -> p.getPatient() != null
+                                                        && !p.getPatient().getUsername().startsWith("borrado_"))
                                         .map(this::mapToDTO)
                                         .collect(Collectors.toList());
                 }
@@ -78,6 +80,8 @@ public class ExercisePrescriptionService {
                         User physio = findUserByIdOrUsername(username);
                         return prescriptionRepository.findByPhysiotherapistIdOrderByCreatedAtDesc(physio.getId())
                                         .stream()
+                                        .filter(p -> p.getPatient() != null
+                                                        && !p.getPatient().getUsername().startsWith("borrado_"))
                                         .map(this::mapToDTO)
                                         .collect(Collectors.toList());
                 }

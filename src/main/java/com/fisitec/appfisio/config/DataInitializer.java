@@ -36,7 +36,20 @@ public class DataInitializer implements CommandLineRunner {
 
         // 4. Paciente
         if (!userService.existsByUsername("paciente1")) {
-            userService.createUser("paciente1", "paciente1@appfisio.com", "paciente123", "ROLE_PACIENTE");
+            var patient = userService.createUser("paciente1", "paciente1@appfisio.com", "paciente123", "ROLE_PACIENTE");
+            userService.findByUsername("fisio1").ifPresent(fisio -> {
+                patient.setPrimaryPhysio(fisio);
+                userService.updateUser(patient);
+            });
+        } else {
+            userService.findByUsername("paciente1").ifPresent(patient -> {
+                if (patient.getPrimaryPhysio() == null) {
+                    userService.findByUsername("fisio1").ifPresent(fisio -> {
+                        patient.setPrimaryPhysio(fisio);
+                        userService.updateUser(patient);
+                    });
+                }
+            });
         }
     }
 

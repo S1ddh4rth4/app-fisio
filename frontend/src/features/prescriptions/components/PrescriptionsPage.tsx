@@ -17,7 +17,12 @@ import {
     Pencil,
     Trash2,
     Filter,
-    ShieldAlert
+    ShieldAlert,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    FileText
 } from 'lucide-react';
 
 export const PrescriptionsPage = () => {
@@ -30,7 +35,16 @@ export const PrescriptionsPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPrescription, setEditingPrescription] = useState<PrescriptionResponseDTO | null>(null);
     const [selectedPatientFilter, setSelectedPatientFilter] = useState<string>('ALL');
+    const [activeExerciseModal, setActiveExerciseModal] = useState<{
+        prescription: PrescriptionResponseDTO;
+        index: number;
+    } | null>(null);
+    const [completedSeries, setCompletedSeries] = useState<Record<string, boolean>>({});
     const [error, setError] = useState<string | null>(null);
+
+    const toggleSeriesCheck = (key: string) => {
+        setCompletedSeries((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
 
     const fetchPrescriptions = async () => {
         setIsLoading(true);
@@ -280,57 +294,252 @@ export const PrescriptionsPage = () => {
                                 </div>
                             )}
 
-                            {/* Grid de Ejercicios */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {pres.items.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="p-4 bg-teal-50/40 rounded-2xl border border-teal-100 flex flex-col justify-between"
-                                    >
-                                        <div>
-                                            <div className="flex items-center justify-between gap-2 mb-2">
-                                                <h4 className="font-bold text-slate-900 text-sm">
-                                                    {item.exerciseName}
-                                                </h4>
-                                                <span className="text-[10px] font-extrabold bg-teal-600 text-white px-2 py-0.5 rounded-lg">
-                                                    {item.sets} x {item.repetitions}
+                            {/* Grid de Ejercicios Interactivos */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                {pres.items.map((item, idx) => {
+                                    const seriesBreakdown = item.repetitions
+                                        ? item.repetitions.split(' - ').map((s) => s.trim()).filter(Boolean)
+                                        : [];
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setActiveExerciseModal({ prescription: pres, index: idx })}
+                                            className="p-4 sm:p-5 bg-teal-50/40 hover:bg-teal-50/80 rounded-2xl border border-teal-100 hover:border-teal-300 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
+                                        >
+                                            <div className="space-y-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h4 className="font-extrabold text-slate-900 text-base group-hover:text-teal-700 transition-colors">
+                                                        {item.exerciseName}
+                                                    </h4>
+                                                    <span className="text-xs font-extrabold bg-teal-600 text-white px-2.5 py-1 rounded-xl shrink-0">
+                                                        {item.sets} {item.sets === 1 ? 'serie' : 'series'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Desglose legible de series en móvil y escritorio */}
+                                                {seriesBreakdown.length > 1 ? (
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {seriesBreakdown.map((serie, sIdx) => (
+                                                            <span
+                                                                key={sIdx}
+                                                                className="text-xs font-bold bg-white text-teal-900 border border-teal-200/80 px-2.5 py-1 rounded-lg"
+                                                            >
+                                                                {serie}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs font-bold bg-white text-teal-900 border border-teal-200/80 px-3 py-1.5 rounded-xl w-fit">
+                                                        {item.sets} x {item.repetitions}
+                                                    </div>
+                                                )}
+
+                                                {item.frequency && (
+                                                    <p className="text-xs sm:text-sm text-teal-800 font-semibold flex items-center gap-1.5">
+                                                        <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                                        <span>Frecuencia: {item.frequency}</span>
+                                                    </p>
+                                                )}
+
+                                                {item.notes && (
+                                                    <p className="text-xs sm:text-sm text-slate-700 italic bg-white/70 p-2.5 rounded-xl border border-teal-100/80 line-clamp-2">
+                                                        "{item.notes}"
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-3 mt-3 border-t border-teal-100/80 flex items-center justify-between gap-2">
+                                                <span className="text-xs font-bold text-teal-700 group-hover:underline">
+                                                    Tocar para abrir detalle
                                                 </span>
+                                                {item.videoUrl && (
+                                                    <a
+                                                        href={item.videoUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="inline-flex items-center gap-1 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 px-2.5 py-1 rounded-lg transition"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" />
+                                                        Video
+                                                    </a>
+                                                )}
                                             </div>
-
-                                            {item.frequency && (
-                                                <p className="text-xs text-teal-800 font-semibold mb-1">
-                                                    Frecuencia: {item.frequency}
-                                                </p>
-                                            )}
-
-                                            {item.notes && (
-                                                <p className="text-xs text-slate-600 italic">
-                                                    "{item.notes}"
-                                                </p>
-                                            )}
                                         </div>
-
-                                        {item.videoUrl && (
-                                            <div className="pt-3 mt-3 border-t border-teal-100/60 flex items-center justify-between">
-                                                <a
-                                                    href={item.videoUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 hover:text-teal-900 hover:underline"
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                    Ver Video Tutorial
-                                                </a>
-                                                <CheckCircle2 className="w-4 h-4 text-teal-500" />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* Modal Interactivo de Ejercicio / Entrenamiento (Optimizado para Móvil) */}
+            {activeExerciseModal && (() => {
+                const { prescription, index } = activeExerciseModal;
+                const currentItem = prescription.items[index];
+                if (!currentItem) return null;
+
+                const seriesList = currentItem.repetitions
+                    ? currentItem.repetitions.split(' - ').map((s) => s.trim()).filter(Boolean)
+                    : [`${currentItem.sets} x ${currentItem.repetitions}`];
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+                        <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+                            {/* Cabecera del Modal */}
+                            <div className="px-5 py-4 bg-teal-600 text-white flex items-center justify-between gap-3">
+                                <div>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider bg-teal-700/80 px-2.5 py-0.5 rounded-full">
+                                        Ejercicio {index + 1} de {prescription.items.length}
+                                    </span>
+                                    <h3 className="text-lg sm:text-xl font-extrabold mt-1">
+                                        {currentItem.exerciseName}
+                                    </h3>
+                                    <p className="text-xs text-teal-100 font-medium">
+                                        Rutina: {prescription.title}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setActiveExerciseModal(null)}
+                                    className="p-2 text-teal-100 hover:text-white hover:bg-teal-700 rounded-full transition cursor-pointer"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Cuerpo del Ejercicio */}
+                            <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase block">
+                                            Total de Series
+                                        </span>
+                                        <span className="text-base sm:text-lg font-extrabold text-slate-900">
+                                            {currentItem.sets} {currentItem.sets === 1 ? 'Serie' : 'Series'}
+                                        </span>
+                                    </div>
+                                    <div className="p-3.5 bg-teal-50/70 rounded-2xl border border-teal-200">
+                                        <span className="text-[11px] font-bold text-teal-700 uppercase block">
+                                            Frecuencia
+                                        </span>
+                                        <span className="text-sm sm:text-base font-extrabold text-teal-900">
+                                            {currentItem.frequency || 'Según indicación'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Lista interactiva de Series para marcar avance */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-extrabold uppercase text-slate-700">
+                                            Desglose de Series (Toca para marcar tu avance)
+                                        </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {seriesList.map((serieText, sIdx) => {
+                                            const checkKey = `${prescription.id}-${index}-${sIdx}`;
+                                            const isDone = Boolean(completedSeries[checkKey]);
+                                            return (
+                                                <div
+                                                    key={sIdx}
+                                                    onClick={() => toggleSeriesCheck(checkKey)}
+                                                    className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition select-none ${isDone
+                                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                                        : 'bg-white border-slate-200 hover:border-teal-300 text-slate-900'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={`w-7 h-7 rounded-xl text-xs font-extrabold flex items-center justify-center ${isDone
+                                                            ? 'bg-emerald-600 text-white'
+                                                            : 'bg-teal-50 text-teal-700 border border-teal-200'
+                                                            }`}>
+                                                            {sIdx + 1}
+                                                        </span>
+                                                        <span className={`text-sm sm:text-base font-bold ${isDone ? 'line-through opacity-75' : ''}`}>
+                                                            {serieText}
+                                                        </span>
+                                                    </div>
+                                                    <CheckCircle2 className={`w-5 h-5 shrink-0 ${isDone ? 'text-emerald-600' : 'text-slate-300'}`} />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Indicaciones específicas del ejercicio */}
+                                {currentItem.notes && (
+                                    <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-1">
+                                        <span className="text-xs font-extrabold uppercase text-amber-900 flex items-center gap-1.5">
+                                            <FileText className="w-4 h-4 text-amber-700" />
+                                            Indicaciones del Fisioterapeuta
+                                        </span>
+                                        <p className="text-sm sm:text-base text-amber-950 font-medium leading-relaxed">
+                                            {currentItem.notes}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Indicaciones generales de la rutina */}
+                                {prescription.generalInstructions && (
+                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+                                        <span className="text-xs font-bold uppercase text-slate-500 block">
+                                            Indicaciones Generales de la Rutina
+                                        </span>
+                                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                                            {prescription.generalInstructions}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {currentItem.videoUrl && (
+                                    <a
+                                        href={currentItem.videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition shadow-xs"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Abrir Video Tutorial del Ejercicio
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Pie con navegación entre ejercicios de la misma rutina */}
+                            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={index === 0}
+                                    onClick={() => setActiveExerciseModal({ prescription, index: index - 1 })}
+                                    leftIcon={<ChevronLeft className="w-4 h-4" />}
+                                >
+                                    Anterior
+                                </Button>
+
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => setActiveExerciseModal(null)}
+                                >
+                                    Cerrar
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={index >= prescription.items.length - 1}
+                                    onClick={() => setActiveExerciseModal({ prescription, index: index + 1 })}
+                                    rightIcon={<ChevronRight className="w-4 h-4" />}
+                                >
+                                    Siguiente
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Modal para Crear o Editar Prescripción */}
             <PrescriptionModal

@@ -140,7 +140,7 @@ export const TreatmentsPage = () => {
                     />
                 </div>
 
-                {uniquePhysios.length > 1 && (
+                {!hasRole('ROLE_PACIENTE') && uniquePhysios.length > 1 && (
                     <div className="flex items-center gap-2 shrink-0">
                         <Filter className="w-4 h-4 text-teal-600" />
                         <select
