@@ -20,6 +20,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
+    const [isNoEmail, setIsNoEmail] = useState(false);
     const [assignedPhysioUsername, setAssignedPhysioUsername] = useState('');
     const [professionalsList, setProfessionalsList] = useState<any[]>([]);
     const [acceptsPrivacyPolicy, setAcceptsPrivacyPolicy] = useState(false);
@@ -51,9 +52,12 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
         setIsLoading(true);
 
         try {
+            const generatedInternalEmail = `sin-correo-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}@sin-correo.local`;
+            const finalEmail = isNoEmail ? generatedInternalEmail : email;
+
             const created = await patientService.create({
                 fullName,
-                email,
+                email: finalEmail,
                 acceptsPrivacyPolicy,
                 assignedPhysioUsername: isAdminOrReception ? assignedPhysioUsername : undefined,
             });
@@ -81,6 +85,7 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
         }
         setFullName('');
         setEmail('');
+        setIsNoEmail(false);
         setAcceptsPrivacyPolicy(false);
         setErrorMsg(null);
         setCreatedPatient(null);
@@ -168,17 +173,39 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                             helperText="El sistema asignará llopez (o llopez1 si ya existe)"
                         />
 
-                        <Input
-                            label="Correo Electrónico"
-                            type="email"
-                            required
-                            autoComplete="off"
-                            placeholder="ej. laura.lopez@gmail.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value.trim())}
-                            leftIcon={<Mail className="w-5 h-5 text-slate-400" />}
-                            helperText="El paciente podrá ingresar al sistema con este correo"
-                        />
+                        <label className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/70 transition">
+                            <input
+                                type="checkbox"
+                                checked={isNoEmail}
+                                onChange={(e) => {
+                                    setIsNoEmail(e.target.checked);
+                                    if (e.target.checked) setEmail('');
+                                }}
+                                className="mt-0.5 w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500 cursor-pointer"
+                            />
+                            <div className="text-xs">
+                                <span className="font-bold text-slate-800 block">
+                                    Paciente ocasional / Sin correo electrónico
+                                </span>
+                                <span className="text-slate-500">
+                                    Crea su ficha clínica y agenda sin enviar correos ni requerir cuenta de acceso.
+                                </span>
+                            </div>
+                        </label>
+
+                        {!isNoEmail && (
+                            <Input
+                                label="Correo Electrónico"
+                                type="email"
+                                required
+                                autoComplete="off"
+                                placeholder="ej. laura.lopez@gmail.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value.trim())}
+                                leftIcon={<Mail className="w-5 h-5 text-slate-400" />}
+                                helperText="El paciente podrá ingresar al sistema con este correo"
+                            />
+                        )}
 
                         {isAdminOrReception && (
                             <div>
@@ -206,10 +233,12 @@ export const PatientModal = ({ isOpen, onClose, onSuccess }: PatientModalProps) 
                             </div>
                         )}
 
-                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-2 text-xs text-slate-600">
-                            <Send className="w-4 h-4 text-teal-600 shrink-0" />
-                            <span>El paciente recibirá su acceso por correo electrónico automáticamente.</span>
-                        </div>
+                        {!isNoEmail && (
+                            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-2 text-xs text-slate-600">
+                                <Send className="w-4 h-4 text-teal-600 shrink-0" />
+                                <span>El paciente recibirá su acceso por correo electrónico automáticamente.</span>
+                            </div>
+                        )}
 
                         {/* Casilla Obligatoria de Privacidad */}
                         <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">

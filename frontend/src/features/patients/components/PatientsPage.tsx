@@ -100,6 +100,9 @@ export const PatientsPage = () => {
 
     // Función de Data Masking
     const maskEmail = (email: string) => {
+        if (email && email.toLowerCase().endsWith('@sin-correo.local')) {
+            return 'Sin correo (Paciente Ocasional)';
+        }
         // Los administradores tienen autorización de máximo nivel para ver datos crudos
         if (hasRole('ROLE_ADMIN')) return email;
 

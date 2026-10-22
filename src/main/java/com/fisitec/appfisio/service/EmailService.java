@@ -40,6 +40,12 @@ public class EmailService {
     return frontendUrl.replace("appfisio.online", "appfisio.com");
   }
 
+  private boolean isInternalNoEmail(String email) {
+    return email == null || email.isBlank()
+        || email.toLowerCase().endsWith("@sin-correo.local")
+        || email.toLowerCase().startsWith("borrado_");
+  }
+
   /**
    * Envía en segundo plano (@Async) el correo de bienvenida con las credenciales
    * temporales al registrar un Paciente o un Fisioterapeuta/Staff.
@@ -47,6 +53,10 @@ public class EmailService {
   @Async
   public void sendWelcomeCredentials(String toEmail, String displayName, String username, String temporaryPassword,
       String roleName) {
+    if (isInternalNoEmail(toEmail)) {
+      log.info("Paciente ocasional / sin correo ({}): se omite envío desde {}", username, fromEmail);
+      return;
+    }
     if (mailPassword == null || mailPassword.isBlank()) {
       log.info("Modo sin MAIL_PASSWORD configurado: se omite envío real de correo a {} (usuario: {})", toEmail,
           username);
@@ -193,7 +203,7 @@ public class EmailService {
           : physio.getUsername();
 
       // 1. Correo al Paciente con ubicación, acceso e indicaciones de vestimenta
-      if (patientEmail != null && !patientEmail.isBlank()) {
+      if (!isInternalNoEmail(patientEmail)) {
         MimeMessage msg = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(msg, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
             StandardCharsets.UTF_8.name());
@@ -352,7 +362,7 @@ public class EmailService {
     try {
       var patient = appt.getPatient();
       String patientEmail = patient.getEmail();
-      if (patientEmail == null || patientEmail.isBlank())
+      if (isInternalNoEmail(patientEmail))
         return;
 
       var physio = appt.getProfessional();
