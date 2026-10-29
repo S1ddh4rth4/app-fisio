@@ -378,12 +378,18 @@ export const AppointmentsPage = () => {
                       ) : (
                         app.paymentStatus !== 'PAGADO' && (
                           <div className="pt-2 border-t border-slate-200/60 flex justify-end">
-                            <button
-                              onClick={() => handlePatientCancel(app.id)}
-                              className="text-xs font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
-                            >
-                              Cancelar cita
-                            </button>
+                            {(new Date(app.appointmentDate).getTime() - Date.now()) >= 24 * 60 * 60 * 1000 ? (
+                              <button
+                                onClick={() => handlePatientCancel(app.id)}
+                                className="text-xs font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
+                              >
+                                Cancelar cita (más de 24h)
+                              </button>
+                            ) : (
+                              <span className="text-[11px] font-semibold text-slate-500 italic">
+                                Confirmada (menos de 24h — cambios directo con tu fisio)
+                              </span>
+                            )}
                           </div>
                         )
                       )}

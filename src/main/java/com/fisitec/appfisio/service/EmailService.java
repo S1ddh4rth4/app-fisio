@@ -212,32 +212,26 @@ public class EmailService {
         helper.setTo(patientEmail);
         helper.setSubject("Cita Confirmada en AppFisio — " + formattedDate);
 
-        boolean isDomicilio = appt.getAppointmentType() != null
-            && appt.getAppointmentType().toUpperCase().contains("DOMICILIO");
+        /*
+         * BLOQUE DE CONSULTORIO FÍSICO (Desactivado temporalmente mientras todas las
+         * citas son En Casa):
+         * Dirección: Av. Insurgentes Sur 540
+         * Mapa: https://share.google/JbOJ201VfuxS3HOJK
+         * Acceso: Indispensable presentar INE vigente en recepción para el acceso al
+         * edificio.
+         */
+        String locationHtml = """
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
+              <strong style="font-size:13px;display:block;margin-bottom:6px;">Modalidad: Atención en Casa (A Domicilio)</strong>
+              Tu fisioterapeuta acudirá al domicilio registrado en el horario programado.
+            </div>
+            <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#334155;line-height:1.6;">
+              <strong style="font-size:13px;color:#0f172a;display:block;margin-bottom:6px;">Política de Agenda y Reprogramación (24 horas):</strong>
+              Tu horario y la logística de tu fisioterapeuta se reservan exclusivamente para tu atención. Si necesitas reprogramar o cancelar tu cita, puedes hacerlo sin ningún cargo avisando con al menos <strong>24 horas de anticipación</strong>. Las cancelaciones con menos de 24 horas de anticipación o inasistencias generan un cargo por reserva de espacio (o el descuento de la sesión en caso de contar con paquete activo).
+            </div>
+            """;
 
-        String locationHtml = isDomicilio
-            ? """
-                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
-                  <strong style="font-size:13px;display:block;margin-bottom:6px;">Modalidad: Atención en Casa (A Domicilio)</strong>
-                  Tu fisioterapeuta acudirá al domicilio indicado en el horario programado. Recuerda que el servicio a domicilio conlleva un cargo adicional por traslado.
-                </div>
-                """
-            : """
-                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
-                  <strong style="font-size:13px;display:block;margin-bottom:6px;">Ubicación del Consultorio y Acceso:</strong>
-                  <p style="margin:0 0 8px;"><strong>Dirección:</strong> Av. Insurgentes Sur 540</p>
-                  <p style="margin:0 0 10px;">
-                    <a href="https://share.google/JbOJ201VfuxS3HOJK" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:700;font-size:11px;padding:7px 14px;border-radius:8px;">
-                      Ver Ubicación en Google Maps
-                    </a>
-                  </p>
-                  <p style="margin:0;color:#1e40af;"><strong>Acceso al edificio:</strong> Es indispensable presentar tu <strong>INE</strong> (identificación oficial vigente) en recepción para que te permitan el acceso al edificio.</p>
-                </div>
-                """;
-
-        String locationPlainText = isDomicilio
-            ? "\n\nModalidad: Atención en Casa (A Domicilio — aplica cargo extra por traslado)."
-            : "\n\nUbicación del Consultorio: Av. Insurgentes Sur 540 (Mapa: https://share.google/JbOJ201VfuxS3HOJK )\nIMPORTANTE ACCESO: Recuerda llevar tu INE para registrarte y dar acceso al edificio.";
+        String locationPlainText = "\n\nModalidad: Atención en Casa (A Domicilio).\nPolítica de Agenda: Si necesitas reprogramar o cancelar tu cita, puedes hacerlo sin cargo con al menos 24 horas de anticipación. Cancelaciones con menos de 24 horas generan un cargo por reserva de espacio (o descuento de sesión de paquete).";
 
         String htmlPatient = """
             <!DOCTYPE html>
@@ -262,7 +256,7 @@ public class EmailService {
 
                   <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:16px;padding:18px;margin-bottom:22px;font-size:12px;color:#92400e;line-height:1.6;">
                     <strong style="font-size:13px;display:block;margin-bottom:6px;">Recomendación Importante de Vestimenta:</strong>
-                    Para poder realizar tu valoración funcional y aplicar las técnicas fisioterapéuticas con total comodidad, te solicitamos acudir con <strong>ropa cómoda u holgada</strong>:
+                    Para poder realizar tu valoración funcional y aplicar las técnicas fisioterapéuticas con total comodidad, te solicitamos estar listo(a) con <strong>ropa cómoda u holgada</strong>:
                     <ul style="margin:8px 0 0;padding-left:20px;">
                       <li><strong>Zona inferior y columna:</strong> Short deportivo (indispensable acudir en short).</li>
                       <li><strong>Zona superior y cuello:</strong> Top deportivo, blusa o playera de tirantes / manga corta.</li>
@@ -277,7 +271,7 @@ public class EmailService {
                   </div>
                 </div>
                 <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px;text-align:center;font-size:11px;color:#64748b;">
-                  Si requieres reagendar, ingresa al portal o comunícate a la clínica con al menos 12h de anticipación.
+                  Si requieres reagendar o cancelar, ingresa al portal o comunícate con tu fisioterapeuta con al menos 24h de anticipación.
                 </div>
               </div>
             </body>
@@ -536,6 +530,175 @@ public class EmailService {
       log.info("Correo de recuperación de contraseña enviado a {}", toEmail);
     } catch (Exception e) {
       log.error("Fallo al enviar correo de recuperación a {}: {}", toEmail, e.getMessage());
+    }
+  }
+
+  /**
+   * Envía un recordatorio automático 48 horas (2 días) antes de la cita al
+   * paciente,
+   * recordando la política de cancelación o reprogramación con 24 horas de
+   * anticipación.
+   */
+  @Async
+  public void sendAppointmentReminder(com.fisitec.appfisio.entity.Appointment appt) {
+    if (mailPassword == null || mailPassword.isBlank()) {
+      log.info("Modo sin MAIL_PASSWORD: se omite recordatorio 48h de cita #{}", appt.getId());
+      return;
+    }
+
+    try {
+      var patient = appt.getPatient();
+      var physio = appt.getProfessional();
+      if (patient == null || isInternalNoEmail(patient.getEmail())) {
+        return;
+      }
+
+      String patientEmail = patient.getEmail();
+      var formatter = java.time.format.DateTimeFormatter
+          .ofPattern("EEEE d 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs'", new java.util.Locale("es", "MX"));
+      String formattedDate = appt.getAppointmentDate().format(formatter);
+      String patientName = (patient.getFullName() != null && !patient.getFullName().isBlank())
+          ? patient.getFullName()
+          : patient.getUsername();
+      String physioName = (physio != null && physio.getFullName() != null && !physio.getFullName().isBlank())
+          ? physio.getFullName()
+          : (physio != null ? physio.getUsername() : "Fisioterapeuta");
+
+      MimeMessage msg = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(msg, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+          StandardCharsets.UTF_8.name());
+      helper.setFrom(fromEmail, "AppFisio Recordatorios");
+      helper.setReplyTo(fromEmail);
+      helper.setTo(patientEmail);
+      helper.setSubject("Recordatorio de tu Cita en AppFisio — " + formattedDate);
+
+      String plainText = "¡Hola, " + patientName
+          + "!\n\nTe recordamos que en 2 días tienes programada tu sesión de fisioterapia:\n"
+          + "- Fecha y Hora: " + formattedDate + "\n"
+          + "- Fisioterapeuta: " + physioName + "\n"
+          + "- Modalidad: Atención en Casa (A Domicilio)\n\n"
+          + "Política de Agenda y Reprogramación (24 horas):\n"
+          + "Tu horario y la logística de tu fisioterapeuta se reservan exclusivamente para tu atención. Si necesitas reprogramar o cancelar tu cita, puedes hacerlo sin ningún cargo avisando con al menos 24 horas de anticipación. Las cancelaciones con menos de 24 horas de anticipación o inasistencias generan un cargo por reserva de espacio (o el descuento de la sesión en caso de contar con paquete activo).\n\n"
+          + "Recuerda contar con short deportivo y ropa cómoda para tu sesión.\n\n"
+          + "Consulta tu agenda en: " + getFrontendUrl();
+
+      String html = """
+          <!DOCTYPE html>
+          <html lang="es">
+          <body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+            <div style="max-width:560px;margin:30px auto;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
+              <div style="background:#0d9488;padding:26px 30px;text-align:center;color:#ffffff;">
+                <h1 style="margin:0;font-size:24px;font-weight:800;">AppFisio</h1>
+                <p style="margin:4px 0 0;font-size:13px;opacity:0.9;">Recordatorio de Sesión Programada (48h)</p>
+              </div>
+              <div style="padding:30px;">
+                <h2 style="margin:0 0 10px;font-size:18px;">¡Hola, %s!</h2>
+                <p style="font-size:14px;color:#475569;margin-bottom:20px;">Te recordamos que en <strong>2 días</strong> tienes programada tu sesión fisioterapéutica:</p>
+
+                <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:16px;padding:18px;margin-bottom:20px;font-size:13px;">
+                  <p style="margin:0 0 8px;"><strong>Fecha y Hora:</strong> <span style="color:#0f766e;font-weight:700;">%s</span></p>
+                  <p style="margin:0 0 8px;"><strong>Fisioterapeuta:</strong> %s</p>
+                  <p style="margin:0;"><strong>Modalidad:</strong> Atención en Casa (A Domicilio)</p>
+                </div>
+
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:18px;margin-bottom:20px;font-size:12px;color:#1e3a8a;line-height:1.6;">
+                  <strong style="font-size:13px;display:block;margin-bottom:6px;">Política de Agenda y Reprogramación (24 horas):</strong>
+                  Tu horario y la logística de tu fisioterapeuta se reservan exclusivamente para tu atención. Si necesitas reprogramar o cancelar tu cita, puedes hacerlo sin ningún cargo avisando con al menos <strong>24 horas de anticipación</strong>. Las cancelaciones con menos de 24 horas de anticipación o inasistencias generan un cargo por reserva de espacio (o el descuento de la sesión en caso de contar con paquete activo).
+                </div>
+
+                <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:16px;padding:16px;margin-bottom:22px;font-size:12px;color:#92400e;line-height:1.5;">
+                  <strong>Vestimenta para tu sesión:</strong> Te recordamos que es indispensable usar <strong>short deportivo</strong> y playera cómoda o de tirantes.
+                </div>
+
+                <div style="text-align:center;margin:24px 0 10px;">
+                  <a href="%s" style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:12px 24px;border-radius:12px;">
+                    Ver mis Citas en AppFisio
+                  </a>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          """
+          .formatted(escapeHtml(patientName), escapeHtml(formattedDate), escapeHtml(physioName), getFrontendUrl());
+
+      msg.addHeader("X-Auto-Response-Suppress", "OOF, AutoReply");
+      msg.addHeader("Auto-Submitted", "auto-generated");
+      helper.setText(plainText, html);
+      mailSender.send(msg);
+      log.info("Recordatorio 48h enviado a paciente {} para cita #{}", patientEmail, appt.getId());
+    } catch (Exception e) {
+      log.error("Fallo al enviar recordatorio de cita #{}: {}", appt.getId(), e.getMessage());
+    }
+  }
+
+  /**
+   * Notifica al fisioterapeuta cuando una cita de su agenda ha sido cancelada.
+   */
+  @Async
+  public void sendAppointmentCancellationNotice(com.fisitec.appfisio.entity.Appointment appt, String cancelledBy) {
+    if (mailPassword == null || mailPassword.isBlank()) {
+      return;
+    }
+
+    try {
+      var physio = appt.getProfessional();
+      var patient = appt.getPatient();
+      if (physio == null || isInternalNoEmail(physio.getEmail())) {
+        return;
+      }
+
+      var formatter = java.time.format.DateTimeFormatter
+          .ofPattern("EEEE d 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs'", new java.util.Locale("es", "MX"));
+      String formattedDate = appt.getAppointmentDate().format(formatter);
+      String patientName = (patient != null && patient.getFullName() != null && !patient.getFullName().isBlank())
+          ? patient.getFullName()
+          : (patient != null ? patient.getUsername() : "Paciente");
+      String physioName = (physio.getFullName() != null && !physio.getFullName().isBlank())
+          ? physio.getFullName()
+          : physio.getUsername();
+
+      MimeMessage msg = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(msg, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+          StandardCharsets.UTF_8.name());
+      helper.setFrom(fromEmail, "AppFisio Agenda");
+      helper.setReplyTo(fromEmail);
+      helper.setTo(physio.getEmail());
+      helper.setSubject("Cita Cancelada en tu Agenda: " + patientName);
+
+      String html = """
+          <!DOCTYPE html>
+          <html lang="es">
+          <body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+            <div style="max-width:540px;margin:30px auto;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
+              <div style="background:#be123c;padding:22px 28px;text-align:center;color:#ffffff;">
+                <h1 style="margin:0;font-size:20px;font-weight:800;">AppFisio — Aviso de Cancelación</h1>
+              </div>
+              <div style="padding:28px;font-size:13px;color:#334155;">
+                <h2 style="margin:0 0 10px;font-size:16px;color:#0f172a;">Hola, %s</h2>
+                <p>Te informamos que la siguiente cita ha sido cancelada (por <strong>%s</strong>) y el espacio en tu agenda ha quedado disponible:</p>
+                <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:14px;padding:16px;margin:16px 0;">
+                  <p style="margin:0 0 6px;"><strong>Paciente:</strong> %s</p>
+                  <p style="margin:0;"><strong>Fecha y Hora liberada:</strong> %s</p>
+                </div>
+                <div style="text-align:center;margin-top:20px;">
+                  <a href="%s" style="background:#0d9488;color:#ffffff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 20px;border-radius:10px;">
+                    Ver Agenda en AppFisio
+                  </a>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          """
+          .formatted(escapeHtml(physioName), escapeHtml(cancelledBy), escapeHtml(patientName),
+              escapeHtml(formattedDate), getFrontendUrl());
+
+      helper.setText(html, true);
+      mailSender.send(msg);
+      log.info("Aviso de cancelación enviado a fisioterapeuta {}", physio.getEmail());
+    } catch (Exception e) {
+      log.error("Fallo al enviar aviso de cancelación: {}", e.getMessage());
     }
   }
 }

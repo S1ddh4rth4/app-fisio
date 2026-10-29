@@ -346,19 +346,34 @@ public class AppointmentService {
                 Appointment appt = appointmentRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada con ID: " + id));
 
+                boolean isAdminOrReception = false;
+                boolean isAssignedPhysio = false;
+                boolean isOwnPatient = false;
+
                 if (authentication != null) {
-                        boolean isAdminOrReception = authentication.getAuthorities().stream()
+                        isAdminOrReception = authentication.getAuthorities().stream()
                                         .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
                                                         || a.getAuthority().equals("ROLE_RECEPCION"));
-                        boolean isAssignedPhysio = appt.getProfessional() != null
+                        isAssignedPhysio = appt.getProfessional() != null
                                         && appt.getProfessional().getUsername()
                                                         .equalsIgnoreCase(authentication.getName());
-                        boolean isOwnPatient = appt.getPatient() != null
+                        isOwnPatient = appt.getPatient() != null
                                         && appt.getPatient().getUsername().equalsIgnoreCase(authentication.getName());
 
                         if (!isAdminOrReception && !isAssignedPhysio && !isOwnPatient) {
                                 throw new org.springframework.security.access.AccessDeniedException(
                                                 "No tienes permisos para cancelar esta cita.");
+                        }
+
+                        // Candado de 24 horas para pacientes: si faltan menos de 24h, debe contactar a
+                        // su fisioterapeuta
+                        if (isOwnPatient && !isAdminOrReception && !isAssignedPhysio) {
+                                if (appt.getAppointmentDate() != null
+                                                && appt.getAppointmentDate()
+                                                                .isBefore(LocalDateTime.now().plusHours(24))) {
+                                        throw new IllegalStateException(
+                                                        "Por política de agenda, las citas con menos de 24 horas de anticipación ya cuentan con logística reservada y no pueden cancelarse en línea. Por favor comunícate directamente con tu fisioterapeuta.");
+                                }
                         }
                 }
 
@@ -372,6 +387,18 @@ public class AppointmentService {
 
                 appointmentRepository.delete(appt);
 
+                // Si la canceló el paciente, avisar por correo al fisioterapeuta que el espacio
+                // quedó libre
+                if (isOwnPatient && !isAssignedPhysio && emailService != null) {
+                        try {
+                                emailService.sendAppointmentCancellationNotice(appt,
+                                                authentication != null ? authentication.getName() : "Paciente");
+                        } catch (Exception ex) {
+                                System.err.println("Error no bloqueante enviando aviso de cancelación: "
+                                                + ex.getMessage());
+                        }
+                }
+
                 if (authentication != null && auditService != null) {
                         auditService.logAction(
                                         authentication.getName(),
@@ -379,6 +406,34 @@ public class AppointmentService {
                                         targetPatientId,
                                         "Canceló y liberó el horario de la cita #" + id + " programada para "
                                                         + apptDate);
+                }
+        }
+
+        /**
+         * Tarea programada diaria (09:00 AM) que envía recordatorios automáticos por
+         * correo
+         * a los pacientes cuya cita está programada exactamente para dentro de 2 días
+         * (48 horas).
+         */
+        @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 9 * * *")
+        @Transactional(readOnly = true)
+        public void sendTwoDayAdvanceReminders() {
+                LocalDate targetDate = LocalDate.now().plusDays(2);
+                LocalDateTime startOfDay = targetDate.atStartOfDay();
+                LocalDateTime endOfDay = targetDate.atTime(LocalTime.MAX);
+
+                List<Appointment> upcomingAppointments = appointmentRepository
+                                .findByAppointmentDateBetweenOrderByAppointmentDateAsc(startOfDay, endOfDay);
+
+                for (Appointment appt : upcomingAppointments) {
+                        if ("SCHEDULED".equalsIgnoreCase(appt.getStatus()) && emailService != null) {
+                                try {
+                                        emailService.sendAppointmentReminder(appt);
+                                } catch (Exception ex) {
+                                        System.err.println("Error enviando recordatorio 48h para cita #" + appt.getId()
+                                                        + ": " + ex.getMessage());
+                                }
+                        }
                 }
         }
 

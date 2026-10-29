@@ -26,7 +26,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
     const [selectedTime, setSelectedTime] = useState('09:00');
     const [reason, setReason] = useState('');
     const [appointmentType, setAppointmentType] = useState('VALORACION_INICIAL'); // Por Defecto
-    const [modality, setModality] = useState<'CONSULTORIO' | 'DOMICILIO'>('CONSULTORIO');
+    const [modality, setModality] = useState<'CONSULTORIO' | 'DOMICILIO'>('DOMICILIO');
 
     const [patientsList, setPatientsList] = useState<PatientDTO[]>([]);
     const [professionalsList, setProfessionalsList] = useState<any[]>([]); // Lista de Doctores
@@ -115,7 +115,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
             setSelectedTime(firstValidTime);
             setReason('');
             setAppointmentType('VALORACION_INICIAL');
-            setModality('CONSULTORIO');
+            setModality('DOMICILIO');
 
             // 3. Cargar lista de pacientes (si eres doctor) o fijar tu nombre (si eres paciente)
             if (isPatient) {
@@ -137,7 +137,7 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
         setSelectedDate('');      // Limpiamos la fecha nueva
         setSelectedTime('09:00'); // Reiniciamos la hora
         setReason('');
-        setModality('CONSULTORIO');
+        setModality('DOMICILIO');
         onClose();
     };
 
@@ -369,15 +369,17 @@ export const AppointmentModal = ({ isOpen, onClose, onSuccess, initialDate }: Ap
                                         onChange={(e) => setModality(e.target.value as 'CONSULTORIO' | 'DOMICILIO')}
                                         className="w-full h-12 bg-white text-slate-900 text-sm rounded-xl border border-slate-300 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/20 focus-visible:border-teal-600 px-3.5 transition-all duration-200 cursor-pointer"
                                     >
+                                        <option value="DOMICILIO">En Casa (A Domicilio)</option>
+                                        {/* Desactivado temporalmente hasta nuevo aviso:
                                         <option value="CONSULTORIO">En Consultorio (Presencial)</option>
-                                        <option value="DOMICILIO">En Casa (Costo extra)</option>
+                                        */}
                                     </select>
                                 </div>
                             </div>
 
                             {modality === 'DOMICILIO' && (
                                 <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
-                                    <strong>Atención a Domicilio:</strong> Genera un costo adicional por traslado. Por favor incluye tu <strong>dirección completa</strong> en el campo de notas aquí abajo.
+                                    <strong>Atención a Domicilio:</strong> Por favor incluye tu <strong>dirección completa</strong> (calle, número, colonia y referencias) en el campo de notas aquí abajo.
                                 </div>
                             )}
 
